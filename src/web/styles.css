@@ -32,6 +32,10 @@ h3{font-size:14px;margin-bottom:0}
 .column-heading .icon{margin-left:auto;color:#8a9684}
 .cards{display:flex;flex-direction:column;gap:10px}
 .card{border:1px solid #dce3d7;border-radius:9px;background:#fff;box-shadow:0 2px 3px #203d3010;overflow:hidden}
+.card.selected{border-color:#729b75;box-shadow:0 0 0 2px #76967626}
+.column:focus-visible{outline:3px solid #71986b;outline-offset:-3px}
+.card[draggable="true"]{cursor:grab}.card[draggable="true"]:active{cursor:grabbing}
+.move-error{margin:0 32px 14px}.board[aria-busy="true"]{cursor:progress}
 .card-open{border:0;border-radius:8px;display:flex;flex-direction:column;align-items:flex-start;text-align:left;width:100%;padding:15px 12px;gap:10px;background:#fff}
 .card-open:hover{background:#fcfdfb}
 .card-title{font-weight:600;font-size:13px;overflow-wrap:anywhere}
@@ -46,7 +50,7 @@ h3{font-size:14px;margin-bottom:0}
 .loading{padding:50px;text-align:center;color:#8a958a}
 dialog{border:1px solid #dce3d7;border-radius:16px;padding:0;width:min(720px,calc(100vw - 28px));max-height:90vh;color:inherit;box-shadow:0 20px 80px #173b352b}
 dialog::backdrop{background:#16342d66;backdrop-filter:blur(2px)}
-.dialog-head{padding:23px 27px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e8ece5}
+.dialog-head{padding:23px 27px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e8ece5;position:sticky;top:0;background:#fff;z-index:1}
 .dialog-head h2{font-size:21px}
 .dialog-content{padding:22px 27px}
 .dialog-footer{padding:16px 27px;background:#f7f9f4;border-top:1px solid #e8ece5;display:flex;align-items:center;justify-content:space-between;gap:12px}
