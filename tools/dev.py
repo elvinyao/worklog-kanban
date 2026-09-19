@@ -13,8 +13,6 @@ def main():
     parser.add_argument('--probe', action='store_true')
     parser.add_argument('--mode', choices=['dummy','lifecycle-test'], default='dummy')
     args = parser.parse_args()
-    if not args.probe:
-        raise SystemExit('Full board server is planned in T09')
     env = {**os.environ, 'WORKLOG_BUILD_MODE':args.mode}
     children = []
     stopping = False
@@ -23,7 +21,7 @@ def main():
         stopping = True
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    services = [('tools.probe:create_app',4173),('dummy.jira:create_app',4180),('dummy.mattermost:create_app',4181)]
+    services = [('tools.probe:create_app' if args.probe else 'tools.board:create_app',4173),('dummy.jira:create_app',4180),('dummy.mattermost:create_app',4181)]
     try:
         for module,port in services:
             children.append(subprocess.Popen([sys.executable,'-m','uvicorn',module,'--factory','--host','0.0.0.0','--port',str(port),'--workers','1','--no-access-log','--no-proxy-headers','--log-level','warning'],env=env))

@@ -5,12 +5,13 @@ import { build } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const args = process.argv.slice(2);
-if (!args.includes('--probe') || args.includes('--production')) throw new Error('Full/production build is planned in T09/T13');
+if (args.includes('--production')) throw new Error('Production build is planned in T13');
 const lifecycle = args.includes('lifecycle-test');
 const config = JSON.parse(execFileSync('python',['-m','tools.config','config/dummy.json'],{encoding:'utf8'}));
 const define = {__SITE_CONFIG__:JSON.stringify(config),'process.env.NODE_ENV':JSON.stringify(lifecycle ? 'development' : 'production')};
 const outDir = path.resolve(lifecycle ? 'dist/lifecycle/probe' : 'dist/probe');
-await build({configFile:false,root:path.resolve('src/probe'),plugins:[react()],define,build:{outDir,emptyOutDir:true,sourcemap:false,minify:!lifecycle}});
+await build({configFile:false,root:path.resolve('src/probe'),base:'/probe/',plugins:[react()],define,build:{outDir,emptyOutDir:true,sourcemap:false,minify:!lifecycle}});
+if(!args.includes('--probe'))await build({configFile:false,root:path.resolve('src/web'),plugins:[react()],define,build:{outDir:path.resolve(lifecycle?'dist/lifecycle/web':'dist/web'),emptyOutDir:true,sourcemap:false,minify:!lifecycle}});
 const extensionDir = path.resolve('dist/extension-dummy');
 for (const name of ['worker','bridge']) {
   await build({configFile:false,define,build:{outDir:extensionDir,emptyOutDir:name === 'worker',sourcemap:false,lib:{entry:path.resolve('src/extension/'+name+'.ts'),name:'WorklogBridge',formats:[name === 'worker' ? 'es' : 'iife'],fileName:()=>name+'.js'}}});

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 def create_app():
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -21,5 +21,7 @@ def create_app():
     directory = Path('dist/lifecycle/probe' if os.environ.get('WORKLOG_BUILD_MODE') == 'lifecycle-test' else 'dist/probe')
     if not (directory/'index.html').is_file():
         raise RuntimeError('Build probe before starting')
-    app.mount('/', StaticFiles(directory=directory,html=True),name='probe')
+    @app.get('/')
+    async def root(): return RedirectResponse('/probe/')
+    app.mount('/probe', StaticFiles(directory=directory,html=True),name='probe')
     return app

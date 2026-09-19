@@ -3,7 +3,7 @@ import { test, expect, board, jira, login, inspect } from './fixtures';
 
 test('probe presents readable results, timestamp, reconnect and simulated environment',async({alice})=>{
   await login(alice,jira,'alice');
-  const page=await alice.newPage();await page.goto(board);
+  const page=await alice.newPage();await page.goto(board+'/probe/');
   await expect(page.getByRole('status')).toHaveText('已连接');
   await expect(page.getByRole('button',{name:'重新连接',exact:true})).toBeEnabled();
   await page.getByLabel('Jira 票据').fill('DEMO-3');await page.getByRole('button',{name:'读取 Jira',exact:true}).click();
@@ -16,7 +16,7 @@ test('probe presents readable results, timestamp, reconnect and simulated enviro
 test('missing extension is explicit and reconnect is available',async()=>{
   const browser=await chromium.launch();
   try{
-    const page=await browser.newPage();await page.goto(board);
+    const page=await browser.newPage();await page.goto(board+'/probe/');
     await expect(page.getByRole('status')).toHaveText('扩展不可用',{timeout:6000});
     await expect(page.getByRole('button',{name:'重新连接',exact:true})).toBeEnabled();
     await expect(page.getByRole('button',{name:'读取 Jira',exact:true})).toBeDisabled();
@@ -38,7 +38,7 @@ test('page lifecycle removes listeners and aborts paging; StrictMode is exercise
     window.addEventListener=((name:string,listener:EventListenerOrEventListenerObject,options?:boolean|AddEventListenerOptions)=>{if(name==='message'){active.add(listener);state.adds++;state.active=active.size;}add(name,listener,options);}) as typeof window.addEventListener;
     window.removeEventListener=((name:string,listener:EventListenerOrEventListenerObject,options?:boolean|EventListenerOptions)=>{if(name==='message'){active.delete(listener);state.removes++;state.active=active.size;}remove(name,listener,options);}) as typeof window.removeEventListener;
   });
-  await page.goto(board);await expect(page.getByRole('status')).toHaveText('已连接');
+  await page.goto(board+'/probe/');await expect(page.getByRole('status')).toHaveText('已连接');
   expect(await page.evaluate(()=>Reflect.get(window,'__probeListeners').active)).toBe(1);
   const setups=process.env.WORKLOG_TEST_MODE==='lifecycle-test'?2:1;
   expect(await page.evaluate(()=>Reflect.get(window,'__probeListeners').adds)).toBe(setups);
