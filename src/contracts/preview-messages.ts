@@ -1,12 +1,13 @@
 import { exact, record, type SiteConfig } from './config';
 import { JIRA_KEY, POST_ID, TEAM, parseResource } from './resource-links';
+import {parseSites,type SiteAddresses} from './extension-settings';
 
 type Envelope = {version:1;id:string};
 export type PreviewRequest = Envelope & (
-  {op:'hello'} | {op:'jira.preview';key:string} |
+  {op:'hello';sites?:SiteAddresses} | {op:'jira.preview';key:string} |
   {op:'mattermost.preview';postId:string;team:string} | {op:'cancel';targetId:string}
 );
-export type PreviewErrorCode = 'login_required'|'unavailable'|'network'|'rate_limited'|'protocol'|'disconnected';
+export type PreviewErrorCode = 'login_required'|'unavailable'|'network'|'rate_limited'|'protocol'|'disconnected'|'configuration_mismatch';
 export interface PreviewError {code:PreviewErrorCode;retryAfterMs?:number}
 export interface JiraPreview {
   kind:'jira'; key:string; url:string; summary:string; assignee:string|null; status:string;
@@ -26,7 +27,7 @@ export function parseRequest(value: unknown): PreviewRequest {
   const v = record(value);
   if (v.version !== 1 || !requestId(v.id)) throw new Error('Invalid envelope');
   const base = ['version','id','op'];
-  if (v.op === 'hello') exact(v,base);
+  if (v.op === 'hello') {exact(v,[...base,...('sites' in v?['sites']:[])]);return {version:1,id:v.id,op:'hello',...('sites' in v?{sites:parseSites(v.sites)}:{})};}
   else if (v.op === 'cancel') {
     exact(v,[...base,'targetId']);
     if (!requestId(v.targetId)) throw new Error('Invalid cancellation');
@@ -54,7 +55,7 @@ export function parseReply(value:unknown, config:SiteConfig): PreviewReply {
   if (!v.ok) {
     const error = record(v.error);
     exact(error, ['code',...('retryAfterMs' in error ? ['retryAfterMs'] : [])]);
-    if (typeof error.code !== 'string' || !['login_required','unavailable','network','rate_limited','protocol','disconnected'].includes(error.code)) throw new Error('Invalid error');
+    if (typeof error.code !== 'string' || !['login_required','unavailable','network','rate_limited','protocol','disconnected','configuration_mismatch'].includes(error.code)) throw new Error('Invalid error');
     if ('retryAfterMs' in error && (error.code !== 'rate_limited' || typeof error.retryAfterMs !== 'number' || !Number.isSafeInteger(error.retryAfterMs) || error.retryAfterMs < 0)) throw new Error('Invalid retry time');
   } else {
     const data = record(v.data);

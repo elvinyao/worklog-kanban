@@ -7,7 +7,7 @@ import uuid
 
 
 def export(source:Path,target:Path):
-    files={'manifest.json','worker.js','bridge.js'}
+    files={'manifest.json','worker.js','bridge.js','options.html','options.js','options.css'}
     if not all((source/name).is_file() for name in files):raise RuntimeError('Extension build is incomplete')
     manifest=json.loads((source/'manifest.json').read_text())
     if manifest.get('manifest_version')!=3:raise RuntimeError('Invalid extension manifest')

@@ -45,6 +45,14 @@ it('validates every fixed operation, including cancel and Mattermost', () => {
   for (const team of ['..','a/b','a%2fb']) expect(() => parseRequest({...messages[2],team})).toThrow();
 });
 
+it('binds a handshake to exact sites without allowing extra credentials',()=>{
+  const sites={boardOrigin:'https://board.example',jiraBaseUrl:'https://jira.example/jira',mattermostBaseUrl:'https://chat.example'};
+  const hello={version:1,id:'configured',op:'hello',sites};
+  expect(parseRequest(hello)).toEqual(hello);
+  for(const invalid of [{...sites,token:'private'},{...sites,boardOrigin:'https://board.example/path'},{...sites,jiraBaseUrl:'https://user:pass@jira.example'}])expect(()=>parseRequest({...hello,sites:invalid})).toThrow();
+  expect(parseReply({version:1,id:'configured',ok:false,error:{code:'configuration_mismatch'}},validateConfig(corpus.config))).toMatchObject({error:{code:'configuration_mismatch'}});
+});
+
 it('rejects raw private fields and malformed preview responses', () => {
   const data = {kind:'jira',key:'DEMO-1',url:corpus.config.jiraBaseUrl+'/browse/DEMO-1',summary:'合成',assignee:null,status:'Open',comment:null};
   const reply = {version:1,id:'a',ok:true,data};

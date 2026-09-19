@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-**T01–T18 的实现与自动验证已完成；三语言入口仅保留首页的圆角按钮组，内部消息键已统一为英文。默认 Docker 维持 T17 的界面行为，T18 源码将在下次更新时进入镜像。沿用 main 本地提交，dummy 整体手动验收仍待确认。**
+**T01–T19 的实现与自动验证已完成；扩展 0.2.0 支持部署默认值及安装后设置页，默认 Docker 已更新到当前功能。三语言入口仍仅在首页，设置页自动跟随浏览器语言。沿用 main 本地提交；真实 Chrome/Edge 原生授权弹窗及原有 dummy 整体手动验收仍待确认。**
 
 T14 受测应用版本 `add5fbb`；98 后端测试、69 前端逻辑测试、普通 Chromium 完整 25 项及补充安全用例 1 项通过，独立 StrictMode 构建 9 项通过。[综合确认结果](acceptance-001/総合確認結果.md)逐项映射 45 个 dummy 观察点，明确 43 项自动/静态范围内通过、K02 部分通过、R01 未执行。
 
@@ -50,9 +50,11 @@ T16 受测实现 `79ede0e`；三语言核心、界面、个人预览隔离及 Do
 | T16 三语言界面 | 完成；默认 Docker 已更新 | [追加计划](../../2026-09-19_i18n/対応計画.md)、[初始负例](task16_i18n/attempt-001/実行結果.md)、[完整回归初验](task16_i18n/attempt-002/実行結果.md)、[最终复验](task16_i18n/attempt-003/実行結果.md) |
 | T17 首页语言入口美化 | 完成；默认 Docker 已更新 | [修订计划](../../2026-09-19_i18n/対応計画.md#t17-入口收敛与外观修订)、[基线和负例](task17_language-ui/attempt-001/実行結果.md)、[复验与综合确认](task17_language-ui/attempt-002/実行結果.md) |
 | T18 英文消息键 | 完成；三语言文案不变 | [基线和负例](task18_message-keys/attempt-001/実行結果.md)、[首轮验证](task18_message-keys/attempt-002/実行結果.md)、[33 项浏览器复验与综合确认](task18_message-keys/attempt-003/実行結果.md) |
+| T19 安装后扩展设置 | 实现与自动验证完成；Docker 已更新；原生授权弹窗待验 | [基线与 RED](task19_extension-settings/attempt-001/実行結果.md)、[首轮与环境边界](task19_extension-settings/attempt-002/実行結果.md)、[竞态修复和回归](task19_extension-settings/attempt-003/実行結果.md)、[最终交付](task19_extension-settings/attempt-004/実行結果.md) |
 
 ## 下一步与阻碍
 
+- T19 的[设计与范围](../../2026-09-20_extension-settings/設計.md)、[实施计划](../../2026-09-20_extension-settings/対応計画.md)和[设置手动步骤](../../2026-09-20_extension-settings/手動確認手順.md)。用户需重新加载扩展并刷新看板；ES-M01 原生弹窗允许/拒绝在实际 Chrome/Edge 待验，Chrome 管理页预授权测试不能替代这一步。
 - 默认 Docker 看板、Jira、Mattermost 已启动，可访问 `http://board.localhost:4173/`；四个双击入口和 `bash docker.sh` 用法见 [运行说明](../../运行说明.md)。个人预览首次需加载 `dist/extension-docker`。没有外部部署或 push。
 - 剩余 dummy 必需项：按 M06 验证真实 OS 输入法；按 M07 在实际 Chrome、Edge 安装扩展并完成核心操作。记录到新的 manual/run，再建立后续 acceptance 记录，不覆盖本次记录。
 - Docker 接口需要沙箱外权限，已通过项目 runner 获准访问 OrbStack；不在主机执行项目代码。

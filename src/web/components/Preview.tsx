@@ -5,7 +5,7 @@ import { resourceKey } from '../state/preview';
 import { avatarUrl,releaseAvatar,safeMarkdown } from '../safe-content';
 import {useLanguage} from '../i18n';
 import { usePreviews } from './PreviewProvider';
-const errorLabel=(error:PreviewError)=>(({login_required:'preview.loginRequired',unavailable:'preview.unavailable',network:'preview.networkFailed',rate_limited:'preview.rateLimited',protocol:'preview.unreadableResponse',disconnected:'preview.disconnected'} as const)[error.code]);
+const errorLabel=(error:PreviewError)=>(({login_required:'preview.loginRequired',unavailable:'preview.unavailable',network:'preview.networkFailed',rate_limited:'preview.rateLimited',protocol:'preview.unreadableResponse',disconnected:'preview.disconnected',configuration_mismatch:'connection.configurationMismatch'} as const)[error.code]);
 function Avatar({data}:{data:MattermostPreview}){
  const [url,setUrl]=useState<string>();
  useEffect(()=>{const value=avatarUrl(data.avatar);setUrl(value);return()=>releaseAvatar(value);},[data.avatar]);

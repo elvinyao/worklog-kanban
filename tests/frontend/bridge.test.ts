@@ -16,12 +16,12 @@ it('ignores an old port disconnect after page restoration opens a new port',asyn
  const ports = [0,1].map(()=>({postMessage:vi.fn(),disconnect:vi.fn(),onMessage:{addListener:vi.fn()},onDisconnect:{addListener:vi.fn()}}));
  let index=0;
  vi.stubGlobal('window',fakeWindow);vi.stubGlobal('location',{origin:sites.boardOrigin});vi.stubGlobal('__SITE_CONFIG__',sites);
- vi.stubGlobal('chrome',{runtime:{connect:()=>ports[index++]}});
+ vi.stubGlobal('chrome',{runtime:{sendMessage:async()=>({ok:true,config:sites}),connect:()=>ports[index++]}});
  try {
   await import('../../src/extension/bridge');
-  const hello=()=>listeners.get('message')!({origin:sites.boardOrigin,source:fakeWindow,data:{channel:'worklog:request',payload:{version:1,id:'hello',op:'hello'}}});
-  hello();listeners.get('pagehide')!({});hello();expect(index).toBe(1);
-  listeners.get('pageshow')!({persisted:true});hello();expect(index).toBe(2);
+  const hello=async()=>{listeners.get('message')!({origin:sites.boardOrigin,source:fakeWindow,data:{channel:'worklog:request',payload:{version:1,id:'hello',op:'hello'}}});await Promise.resolve();await Promise.resolve();};
+  await hello();listeners.get('pagehide')!({});await hello();expect(index).toBe(1);
+  listeners.get('pageshow')!({persisted:true});await hello();expect(index).toBe(2);
   const oldDisconnect=ports[0]!.onDisconnect.addListener.mock.calls[0]![0] as ()=>void;
   oldDisconnect();
   expect(posts).not.toHaveBeenCalled();

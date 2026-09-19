@@ -1,6 +1,7 @@
 import { record, type SiteConfig } from '../contracts/config';
 import { parseReply, parseRequest, type PreviewReply, type PreviewRequest } from '../contracts/preview-messages';
 import { TransportError } from './transport-error';
+import {siteAddresses} from '../contracts/extension-settings';
 
 export class ExtensionClient {
   private pending = new Map<string,{resolve:(v:PreviewReply)=>void;reject:(e:Error)=>void;timer:ReturnType<typeof setTimeout>}>();
@@ -20,6 +21,7 @@ export class ExtensionClient {
     } catch { /* Ignore invalid replies. */ }
   };
   request(request:PreviewRequest,timeoutMs=30000):Promise<PreviewReply> {
+    if(request.op==='hello')request={...request,sites:siteAddresses(this.config)};
     if (this.disposed || this.pending.has(request.id)) return Promise.reject(new TransportError('disconnected'));
     parseRequest(request);
     return new Promise((resolve,reject) => {

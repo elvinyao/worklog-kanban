@@ -29,13 +29,13 @@ test('private synthetic content stays out of Bob, shared responses, SQLite, even
  await chooseLanguage(a,'ja');
  await chooseLanguage(a,'zh');
  for(const page of [a,b,control])expect(await page.evaluate(async()=>({local:Object.entries(localStorage),session:Object.keys(sessionStorage),databases:await indexedDB.databases(),caches:await caches.keys()}))).toEqual({local:page===a?[['worklog.language','zh']]:[],session:[],databases:[],caches:[]});
- expect(await worker.evaluate(async()=>({databases:await indexedDB.databases(),caches:await caches.keys(),storageAPI:typeof chrome.storage}))).toEqual({databases:[],caches:[],storageAPI:'undefined'});
+ expect(await worker.evaluate(async()=>({databases:await indexedDB.databases(),caches:await caches.keys(),local:await chrome.storage.local.get(null),sync:await chrome.storage.sync.get(null),session:await chrome.storage.session.get(null)}))).toEqual({databases:[],caches:[],local:{},sync:{},session:{}});
  const modes=await worker.evaluate(()=>Reflect.get(globalThis,'__cacheModes') as string[]);expect(modes.length).toBeGreaterThan(0);expect(modes.every(mode=>mode==='no-store')).toBe(true);
  const before=(await inspect(control)).requests.length;await a.close();const reopened=await alice.newPage();await reopened.goto(board);await reopened.getByRole('button',{name:'打开卡片：隔离验收卡片',exact:true}).click();await expect(reopened.getByRole('dialog').getByText(new RegExp(marker)).first()).toBeVisible();expect((await inspect(control)).requests.length).toBeGreaterThan(before);
  // Inspect only cache/storage directories, never Cookie/session exports. No bytes are saved as evidence.
  const root=profiles.get(alice)!;await alice.close();let scanned=0;
  async function scan(directory:string):Promise<void>{let entries;try{entries=await readdir(directory,{withFileTypes:true});}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return;throw error;}for(const entry of entries){const file=path.join(directory,entry.name);if(entry.isDirectory())await scan(file);else if(entry.isFile()){scanned++;expect((await readFile(file)).includes(Buffer.from(marker))).toBe(false);}}}
- for(const name of ['Cache','Code Cache','Local Storage','Session Storage','IndexedDB','Service Worker'])await scan(path.join(root,'Default',name));expect(scanned).toBeGreaterThan(0);
+ for(const name of ['Cache','Code Cache','Local Storage','Session Storage','IndexedDB','Service Worker','Local Extension Settings','Sync Extension Settings'])await scan(path.join(root,'Default',name));expect(scanned).toBeGreaterThan(0);
 });
 test('real history navigation clears private state and reads again on return',async({alice})=>{
  const control=await login(alice,jira,'alice');await seedCard(alice,'历史恢复验收','DEMO-2');const page=await alice.newPage();

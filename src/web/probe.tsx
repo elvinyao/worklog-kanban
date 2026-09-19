@@ -10,7 +10,7 @@ import './probe.css';
 import {LanguageProvider,useLanguage} from './i18n';
 import type {MessageKey} from './i18n/core';
 const config = validateConfig(__SITE_CONFIG__);
-const errors = {login_required:'probe.loginRequired',unavailable:'probe.unavailable',network:'probe.networkFailed',rate_limited:'probe.rateLimited',protocol:'probe.unrecognizedResponse',disconnected:'probe.disconnected'} as const;
+const errors = {login_required:'probe.loginRequired',unavailable:'probe.unavailable',network:'probe.networkFailed',rate_limited:'probe.rateLimited',protocol:'probe.unrecognizedResponse',disconnected:'probe.disconnected',configuration_mismatch:'connection.configurationMismatch'} as const;
 
 function Probe() {
   const {t,date,time}=useLanguage();
@@ -36,7 +36,7 @@ function Probe() {
     setStatus('connection.connecting');
     const connection = new ExtensionClient(config,() => { if(alive){invalidate();setStatus('connection.disconnected');} });
     client.current = connection;
-    void connection.request({version:1,id:crypto.randomUUID(),op:'hello'},2500).then(reply => { if(alive)setStatus(reply.ok ? 'connection.connected' : 'connection.failed'); }).catch(() => { if(alive)setStatus('connection.unavailable'); });
+    void connection.request({version:1,id:crypto.randomUUID(),op:'hello'},2500).then(reply => { if(alive)setStatus(reply.ok ? 'connection.connected' : reply.error.code==='configuration_mismatch'?'connection.configurationMismatch':'connection.failed'); }).catch(() => { if(alive)setStatus('connection.unavailable'); });
     const hide = () => {
       alive=false;
       flushSync(()=>{invalidate();setStatus('connection.paused');});

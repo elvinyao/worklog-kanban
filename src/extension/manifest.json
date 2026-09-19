@@ -1,10 +1,14 @@
 {
  "manifest_version":3,
  "name":"Worklog Kanban Personal Preview",
- "version":"0.1.0",
+ "version":"0.2.0",
+ "minimum_chrome_version":"102",
  "description":"Read personal Jira and Mattermost previews using this browser session.",
  "background":{"service_worker":"worker.js","type":"module"},
- "content_scripts":[{"matches":[],"js":["bridge.js"],"run_at":"document_start","all_frames":false}],
+ "options_ui":{"page":"options.html","open_in_tab":true},
+ "action":{"default_title":"Worklog · Settings"},
+ "permissions":["storage","scripting"],
+ "optional_host_permissions":["http://*/*","https://*/*"],
  "host_permissions":[],
  "content_security_policy":{"extension_pages":"script-src 'self'; object-src 'none'"}
 }

@@ -70,7 +70,11 @@ def test_artifact_only_contains_runtime_and_requires_matching_production_config(
     assert not any(forbidden & set(path.relative_to(bundle).parts) or path.suffix=='.map' for path in bundle.rglob('*'))
     assert (bundle/'app/schema.sql').is_file() and (bundle/'web/index.html').is_file()
     manifest=json.loads((bundle/'extension/manifest.json').read_text())
-    assert manifest['host_permissions']==['https://jira.example.invalid/*','https://mattermost.example.invalid/*']
+    assert manifest['host_permissions']==['https://board.example.invalid/*','https://jira.example.invalid/*','https://mattermost.example.invalid/*']
+    assert manifest['optional_host_permissions']==['http://*/*','https://*/*']
+    assert manifest['permissions']==['storage','scripting'] and 'cookies' not in manifest['permissions']
+    assert manifest['options_ui']=={'page':'options.html','open_in_tab':True} and 'content_scripts' not in manifest
+    assert {file.name for file in (bundle/'extension').iterdir()}=={'manifest.json','worker.js','bridge.js','options.html','options.js','options.css'}
     for path in [bundle/'web',bundle/'extension']:
         for file in path.rglob('*'):
             if file.is_file(): assert not any(value in file.read_text() for value in ('jira.localhost','mattermost.localhost','/probe/','__dummy','ALICE_ONLY_MARKER'))

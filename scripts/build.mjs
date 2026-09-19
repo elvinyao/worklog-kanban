@@ -26,16 +26,16 @@ if(!production)await build({configFile:false,build:{outDir:path.resolve('dist/du
 if(!production)await build({configFile:false,root:path.resolve('src/probe'),base:'/probe/',plugins:[react()],define,build:{outDir,emptyOutDir:true,sourcemap:false,minify:!lifecycle}});
 if(!args.includes('--probe'))await build({configFile:false,root:path.resolve('src/web'),plugins:[react()],define,build:{outDir:production?path.join(staging,'web'):path.resolve(lifecycle?'dist/lifecycle/web':'dist/web'),emptyOutDir:true,sourcemap:false,minify:!lifecycle}});
 const extensionDir = production?path.join(staging,'extension'):path.resolve('dist/extension-dummy');
-for (const name of ['worker','bridge']) {
+for (const name of ['worker','bridge','options']) {
   await build({configFile:false,define,build:{outDir:extensionDir,emptyOutDir:name === 'worker',sourcemap:false,lib:{entry:path.resolve('src/extension/'+name+'.ts'),name:'WorklogBridge',formats:[name === 'worker' ? 'es' : 'iife'],fileName:()=>name+'.js'}}});
 }
 const manifest = JSON.parse(await readFile('src/extension/manifest.json','utf8'));
 // Match patterns do not restrict ports; runtime checks enforce exact origins.
 const pattern = value => { const url = new URL(value); return url.protocol+'//'+url.hostname+'/*'; };
-manifest.content_scripts[0].matches = [pattern(config.boardOrigin)];
-manifest.host_permissions = [...new Set([pattern(config.jiraBaseUrl),pattern(config.mattermostBaseUrl)])];
+manifest.host_permissions = [...new Set([pattern(config.boardOrigin),pattern(config.jiraBaseUrl),pattern(config.mattermostBaseUrl)])];
 await mkdir(extensionDir,{recursive:true});
 await writeFile(path.join(extensionDir,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
+for(const name of ['options.html','options.css'])await writeFile(path.join(extensionDir,name),await readFile(path.join('src/extension',name)));
 if(production){
   execFileSync('python',['-m','tools.package','--directory',staging,'--config',path.join(staging,'site-config.json')],{stdio:'inherit'});
   const destination=path.resolve('dist/production'),backup=path.resolve('dist/production.previous-'+randomUUID());let previous=false;

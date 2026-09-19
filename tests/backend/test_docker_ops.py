@@ -76,16 +76,17 @@ def test_docker_entry_rejects_destructive_or_unknown_arguments_without_calling_d
 def test_extension_export_is_atomic_and_keeps_previous_files(tmp_path):
     from docker.export_extension import export
     source=tmp_path/'source';source.mkdir()
-    for name in ['worker.js','bridge.js']:(source/name).write_text('synthetic script')
+    for name in ['worker.js','bridge.js','options.html','options.js','options.css']:(source/name).write_text('synthetic asset')
     (source/'manifest.json').write_text(json.dumps({'manifest_version':3,'background':{'service_worker':'worker.js'},'content_scripts':[{'js':['bridge.js']}]}))
     target=tmp_path/'workspace/dist/extension-docker'
     export(source,target)
+    assert {file.name for file in target.iterdir()}=={'manifest.json','worker.js','bridge.js','options.html','options.js','options.css'}
     assert target.stat().st_mode & 0o005 == 0o005  # Host browser can load a root-exported directory.
     (target/'operator-note.txt').write_text('preserve me')
     (source/'worker.js').write_text('new synthetic script');export(source,target)
     assert (target/'worker.js').read_text()=='new synthetic script'
     assert any((directory/'operator-note.txt').read_text()=='preserve me' for directory in target.parent.glob('extension-docker.previous-*') if (directory/'operator-note.txt').exists())
-    (source/'bridge.js').unlink()
+    (source/'options.js').unlink()
     with pytest.raises(RuntimeError):export(source,target)
     assert (target/'worker.js').read_text()=='new synthetic script'
 
