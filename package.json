@@ -1,0 +1,39 @@
+{
+  "name": "worklog-kanban",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.21.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:probe": "node scripts/build.mjs --probe",
+    "build:production": "node scripts/build.mjs --production",
+    "typecheck": "tsc --noEmit",
+    "check": "node scripts/verify.mjs",
+    "generate:api": "node scripts/generate-api.mjs",
+    "generate:api:check": "node scripts/generate-api.mjs --check",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "dompurify": "3.4.15",
+    "markdown-it": "15.0.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/chrome": "0.2.9",
+    "@types/markdown-it": "14.2.0",
+    "@types/node": "24.13.6",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "5.1.4",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "4.1.11"
+  }
+}
