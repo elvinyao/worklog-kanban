@@ -15,6 +15,7 @@ def main():
     args = parser.parse_args()
     env = {**os.environ, 'WORKLOG_BUILD_MODE':args.mode}
     children = []
+    app_log = open(os.environ['WORKLOG_TEST_APP_LOG'],'ab',buffering=0) if os.environ.get('WORKLOG_TEST_APP_LOG') else None
     stopping = False
     def stop(signum, frame):
         nonlocal stopping
@@ -24,7 +25,8 @@ def main():
     services = [('tools.probe:create_app' if args.probe else 'tools.board:create_app',4173),('dummy.jira:create_app',4180),('dummy.mattermost:create_app',4181)]
     try:
         for module,port in services:
-            children.append(subprocess.Popen([sys.executable,'-m','uvicorn',module,'--factory','--host','0.0.0.0','--port',str(port),'--workers','1','--no-access-log','--no-proxy-headers','--log-level','warning'],env=env))
+            output = app_log if port == 4173 else None
+            children.append(subprocess.Popen([sys.executable,'-m','uvicorn',module,'--factory','--host','0.0.0.0','--port',str(port),'--workers','1','--no-access-log','--no-proxy-headers','--log-level','warning'],env=env,stdout=output,stderr=output))
         deadline = time.monotonic()+15
         for host,port,route in [('board.localhost',4173,'/health'),('jira.localhost',4180,'/jira/__dummy/'),('mattermost.localhost',4181,'/__dummy/')]:
             while not stopping:
@@ -46,6 +48,7 @@ def main():
         for child in children:
             try: child.wait(timeout=5)
             except subprocess.TimeoutExpired: child.kill(); child.wait()
+        if app_log: app_log.close()
 
 
 if __name__ == '__main__':

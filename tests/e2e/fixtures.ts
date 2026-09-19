@@ -6,6 +6,7 @@ import os from 'node:os';
 export const board = 'http://board.localhost:4173';
 export const jira = 'http://jira.localhost:4180/jira';
 export const mm = 'http://mattermost.localhost:4181';
+export const profiles=new WeakMap<BrowserContext,string>();
 export const test = base.extend<{alice:BrowserContext;bob:BrowserContext}>({
   alice:async ({},use) => { await withProfile(use); },
   bob:async ({},use) => { await withProfile(use); },
@@ -13,7 +14,8 @@ export const test = base.extend<{alice:BrowserContext;bob:BrowserContext}>({
 async function withProfile(use:(context:BrowserContext)=>Promise<void>) {
   const directory = await mkdtemp(path.join(os.tmpdir(),'worklog-profile-'));
   const extension = path.resolve('dist/extension-dummy');
-  const context = await chromium.launchPersistentContext(directory,{channel:'chromium',headless:true,args:['--disable-extensions-except='+extension,'--load-extension='+extension,'--host-resolver-rules=MAP board.localhost 127.0.0.1, MAP jira.localhost 127.0.0.1, MAP mattermost.localhost 127.0.0.1, MAP untrusted.localhost 127.0.0.1']});
+  const context = await chromium.launchPersistentContext(directory,{channel:'chromium',headless:true,ignoreDefaultArgs:['--disable-back-forward-cache'],args:['--disable-extensions-except='+extension,'--load-extension='+extension,'--host-resolver-rules=MAP board.localhost 127.0.0.1, MAP jira.localhost 127.0.0.1, MAP mattermost.localhost 127.0.0.1, MAP untrusted.localhost 127.0.0.1']});
+  profiles.set(context,directory);
   try { await use(context); } finally { await context.close(); await rm(directory,{recursive:true,force:true}); }
 }
 export async function login(context:BrowserContext,site:string,identity:'alice'|'bob') {
@@ -30,6 +32,7 @@ export async function fault(page:Page,value:string) {
   await expect(page.locator('#status')).toHaveText('已应用模拟响应');
 }
 export async function inspect(page:Page):Promise<{requests:{method:string;path:string}[];controls:{method:string;path:string}[]}> {
-  return page.evaluate(async()=>{const r=await fetch('inspect',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});return r.json();});
+  const result=await page.evaluate(async()=>{const r=await fetch('inspect',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});if(!r.ok)throw new Error('Dummy inspection failed');return r.json();});
+  expect(result.requests.length,'The bounded request history must not overflow during count assertions').toBeLessThan(1000);return result;
 }
 export { expect };
