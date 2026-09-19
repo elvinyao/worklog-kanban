@@ -24,7 +24,9 @@ export async function login(context:BrowserContext,site:string,identity:'alice'|
   return page;
 }
 export async function fault(page:Page,value:string) {
-  await page.locator('#fault').selectOption(value); await page.getByRole('button',{name:'应用',exact:true}).click();
+  await page.locator('#fault').selectOption(value);
+  const [response]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/__dummy/fault')&&r.request().method()==='POST'),page.getByRole('button',{name:'应用',exact:true}).click()]);
+  expect(response.status()).toBe(200);
   await expect(page.locator('#status')).toHaveText('已应用模拟响应');
 }
 export async function inspect(page:Page):Promise<{requests:{method:string;path:string}[];controls:{method:string;path:string}[]}> {
