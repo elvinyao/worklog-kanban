@@ -1,0 +1,6 @@
+{
+  "mode": "dummy",
+  "boardOrigin": "http://board.localhost:4173",
+  "jiraBaseUrl": "http://jira.localhost:4180/jira",
+  "mattermostBaseUrl": "http://mattermost.localhost:4181"
+}
