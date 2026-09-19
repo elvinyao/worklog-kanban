@@ -16,7 +16,7 @@ test('an already-open discard prompt cannot close the dialog during saving',asyn
  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 test('shared editing, two-page conflicts, links, and atomic column migration work without extension',async({browser})=>{
- const context=await browser.newContext();const page=await context.newPage();const other=await context.newPage();
+ const context=await browser.newContext({locale:'zh-CN'});const page=await context.newPage();const other=await context.newPage();
  await page.goto(board);await expect(page.getByRole('heading',{name:'待处理',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'新建卡片',exact:true}).click();
  await page.getByLabel('共享标题').fill('协作验收卡片');await page.getByLabel('共享笔记').fill('保留的纯文本笔记');

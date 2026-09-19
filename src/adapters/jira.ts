@@ -30,7 +30,7 @@ export async function jiraPreview(key:string,config:SiteConfig,signal:AbortSigna
       if(timestamp>newest){
         newest=timestamp;
         const author=row.author && typeof row.author==='object' ? object(row.author).displayName : undefined;
-        comment={author:typeof author==='string'?author.slice(0,500):'未知用户',created,excerpt:body};
+        comment={author:typeof author==='string'?author.slice(0,500):'',created,excerpt:body};
       }
     }
     offset+=page.comments.length;

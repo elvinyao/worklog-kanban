@@ -22,6 +22,7 @@ try {
 if(production)await writeFile(path.join(staging,'site-config.json'),JSON.stringify(config,null,2)+'\n');
 const define = {__SITE_CONFIG__:JSON.stringify(config),'process.env.NODE_ENV':JSON.stringify(lifecycle ? 'development' : 'production')};
 const outDir = path.resolve(lifecycle ? 'dist/lifecycle/probe' : 'dist/probe');
+if(!production)await build({configFile:false,build:{outDir:path.resolve('dist/dummy'),emptyOutDir:true,sourcemap:false,lib:{entry:path.resolve('src/dummy/controls.ts'),formats:['es'],fileName:()=> 'controls.js'}}});
 if(!production)await build({configFile:false,root:path.resolve('src/probe'),base:'/probe/',plugins:[react()],define,build:{outDir,emptyOutDir:true,sourcemap:false,minify:!lifecycle}});
 if(!args.includes('--probe'))await build({configFile:false,root:path.resolve('src/web'),plugins:[react()],define,build:{outDir:production?path.join(staging,'web'):path.resolve(lifecycle?'dist/lifecycle/web':'dist/web'),emptyOutDir:true,sourcemap:false,minify:!lifecycle}});
 const extensionDir = production?path.join(staging,'extension'):path.resolve('dist/extension-dummy');

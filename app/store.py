@@ -56,6 +56,12 @@ class Store:
     def _snapshot(connection):
         revision = connection.execute('SELECT revision FROM board_meta WHERE id=1').fetchone()[0]
         columns = [dict(row) for row in connection.execute('SELECT id,name,position FROM columns ORDER BY position')]
+        # Seed columns alone lack create/rename audit records. This also works for
+        # existing databases without rewriting names or migrating stored data.
+        custom = {row[0] for row in connection.execute("SELECT DISTINCT resource_id FROM audit_events WHERE action IN ('column.create','column.rename')")}
+        defaults = dict(zip(['待处理','调查中','实装中','单体测试','结合测试','完成'], ['todo','investigating','implementing','unitTesting','integrationTesting','done']))
+        for column in columns:
+            column['defaultNameKey'] = None if column['id'] in custom else defaults.get(column['name'])
         links = {}
         for row in connection.execute('SELECT * FROM mattermost_links ORDER BY position'):
             links.setdefault(row['card_id'], []).append({'id':row['id'],'postId':row['post_id'],'team':row['team'],'url':row['url'],'description':row['description'],'position':row['position']})

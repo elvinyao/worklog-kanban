@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, Response
 
 from dummy.fixtures import AUTHOR, POSTS, PRIVATE_CHANNEL, PRIVATE_POST, PUBLIC_CHANNEL, PNG, post_data
-from dummy.sessions import error, service
+from dummy.sessions import document_shell, error, service
 
 
 def create_app() -> FastAPI:
@@ -49,6 +49,6 @@ def create_app() -> FastAPI:
     async def original(post_id: str, request: Request):
         if not allowed(post_id, request):
             return error(404)
-        return f'<h1>模拟环境 · Mattermost</h1><p>{html.escape(POSTS[post_id]["message"])}</p>'
+        return document_shell('Mattermost', '', f'<h1>Mattermost</h1><p>{html.escape(POSTS[post_id]["message"])}</p>')
 
     return app

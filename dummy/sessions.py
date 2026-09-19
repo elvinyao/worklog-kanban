@@ -2,6 +2,7 @@ import asyncio
 from dataclasses import dataclass, field
 import html
 import os
+from pathlib import Path
 import secrets
 from typing import Literal
 from urllib.parse import urlsplit
@@ -31,6 +32,15 @@ class Session:
 
 def error(status: int):
     return JSONResponse({'error':'resource_unavailable' if status in (403,404) else 'request_failed'}, status_code=status)
+
+
+
+def document_shell(kind: str, prefix: str, body: str):
+    controls = f'{prefix}/__dummy'
+    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Worklog</title><link rel="stylesheet" href="{controls}/style.css"></head><body>
+<main data-kind="{html.escape(kind, quote=True)}"><label class="language">语言 / Language / 言語 <select id="language" aria-label="语言 / Language / 言語"><option value="auto" data-i18n="跟随浏览器">跟随浏览器</option><option value="zh">简体中文</option><option value="en">English</option><option value="ja">日本語</option></select></label>
+<p class="badge" data-i18n="模拟环境 · {{kind}}">模拟环境 · {html.escape(kind)}</p>{body}
+</main><script src="{controls}/controls.js" type="module"></script></body></html>'''
 
 
 def service(kind: str, prefix: str, default_origin: str):
@@ -105,25 +115,25 @@ def service(kind: str, prefix: str, default_origin: str):
     @app.get(controls + '/', response_class=HTMLResponse)
     async def control_page(request: Request):
         session = current(request)
-        who = session.identity if session else '未登录'
-        faults = ''.join(f'<option>{value}</option>' for value in FaultInput.model_fields['fault'].annotation.__args__)
-        return f'''<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>{kind} 模拟环境</title><link rel="stylesheet" href="{controls}/style.css"></head><body>
-<main><p class="badge">模拟环境 · {kind}</p><h1>外部服务模拟控制台</h1><p>当前身份：<strong>{html.escape(who)}</strong></p>
-<p>仅用于本地测试，不需要公司账号、密码或 Token。</p><section><button data-identity="alice">以 Alice 登录</button><button data-identity="bob">以 Bob 登录</button><button data-identity="none">退出</button></section>
-<section><label>模拟响应 <select id="fault">{faults}</select></label><button id="apply-fault">应用</button></section><output id="status"></output>
-<p>Jira：DEMO-1（公开）、DEMO-2（Alice）、DEMO-3（空态）</p><p>Mattermost：{'a'*26}（公开）、{'b'*26}（Alice）</p>
-</main><script src="{controls}/controls.js" type="module"></script></body></html>'''
+        who = html.escape(session.identity) if session else '<span data-i18n="未登录">未登录</span>'
+        fault_labels = ['正常响应','登录已过期','禁止访问','资源不存在','请求限流','返回登录页面','返回 HTML','无效 JSON','外站重定向','响应延迟','连接中断','头像读取失败','分页停滞','缺少用户信息','缺少频道信息']
+        faults = ''.join(f'<option value="{value}" data-i18n="{label}">{label}</option>' for value, label in zip(FaultInput.model_fields['fault'].annotation.__args__, fault_labels, strict=True))
+        return document_shell(kind, prefix, f'''
+<h1 data-i18n="外部服务模拟控制台">外部服务模拟控制台</h1><p><span data-i18n="当前身份：">当前身份：</span><strong>{who}</strong></p>
+<p data-i18n="仅用于本地测试，不需要公司账号、密码或 Token。">仅用于本地测试，不需要公司账号、密码或 Token。</p><section><button data-identity="alice" data-i18n="以 Alice 登录">以 Alice 登录</button><button data-identity="bob" data-i18n="以 Bob 登录">以 Bob 登录</button><button data-identity="none" data-i18n="退出">退出</button></section>
+<section><label><span data-i18n="模拟响应">模拟响应</span> <select id="fault">{faults}</select></label><button id="apply-fault" data-i18n="应用">应用</button></section><output id="status"></output>
+<p data-i18n="Jira：DEMO-1（公开）、DEMO-2（Alice）、DEMO-3（空态）">Jira：DEMO-1（公开）、DEMO-2（Alice）、DEMO-3（空态）</p><p data-i18n="Mattermost：{{public}}（公开）、{{private}}（Alice）">Mattermost：{'a'*26}（公开）、{'b'*26}（Alice）</p>''')
 
     @app.get(controls + '/style.css')
     async def stylesheet():
-        return Response('body{font:16px system-ui;background:#f3f4f1;color:#26372b;margin:0}main{max-width:760px;margin:60px auto;padding:32px;background:white;border-radius:16px}section{margin:24px 0}button,select{font:inherit;padding:10px;margin:4px;border:1px solid #b5c4b8;border-radius:8px}button{cursor:pointer}.badge{color:#64775d}output{display:block}', media_type='text/css')
+        return Response('body{font:16px system-ui;background:#f3f4f1;color:#26372b;margin:0}main{max-width:760px;margin:40px auto;padding:24px;background:white;border-radius:16px;overflow-wrap:anywhere}section{margin:24px 0}button,select{font:inherit;padding:10px;margin:4px;border:1px solid #b5c4b8;border-radius:8px;max-width:100%}button{cursor:pointer}.badge{color:#64775d}output{display:block}.language{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;font-size:13px;gap:6px}', media_type='text/css')
 
     @app.get(controls + '/controls.js')
     async def control_script():
-        return Response('''const base = new URL('./', import.meta.url);
-async function send(route, body) { const r = await fetch(new URL(route, base), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); if(!r.ok) throw new Error('模拟控制失败'); }
-document.querySelectorAll('[data-identity]').forEach(b => b.addEventListener('click', async () => { try { await send('session',{identity:b.dataset.identity}); location.reload(); } catch(e) { document.querySelector('#status').textContent=e.message; } }));
-document.querySelector('#apply-fault').addEventListener('click', async () => { try { await send('fault',{fault:document.querySelector('#fault').value}); document.querySelector('#status').textContent='已应用模拟响应'; } catch(e) { document.querySelector('#status').textContent=e.message; } });''', media_type='text/javascript')
+        script = Path(__file__).resolve().parents[1] / 'dist/dummy/controls.js'
+        if not script.is_file():
+            return Response('Dummy assets require npm run build.', status_code=503, media_type='text/plain')
+        return Response(script.read_text(encoding='utf-8'), media_type='text/javascript')
 
     @app.post(controls + '/session')
     async def login(data: IdentityInput, request: Request):

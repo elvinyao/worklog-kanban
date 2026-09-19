@@ -1,6 +1,6 @@
 """Shared API models only. Personal previews have no server-side schema."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -76,6 +76,7 @@ class Column(SharedModel):
     id: Identifier
     name: Name
     position: Annotated[int, Field(ge=0)]
+    defaultNameKey: Literal['todo','investigating','implementing','unitTesting','integrationTesting','done'] | None = None
 
 
 class JiraLink(SharedModel):

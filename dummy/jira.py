@@ -4,7 +4,7 @@ from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse
 
 from dummy.fixtures import ISSUES, visible_comments
-from dummy.sessions import error, service
+from dummy.sessions import document_shell, error, service
 
 
 def create_app() -> FastAPI:
@@ -34,6 +34,6 @@ def create_app() -> FastAPI:
     async def original(key: str, request: Request):
         if not allowed(key, request):
             return error(404)
-        return f'<h1>模拟环境 · {html.escape(key)}</h1><p>{html.escape(ISSUES[key]["summary"])}</p>'
+        return document_shell('Jira', '/jira', f'<h1>{html.escape(key)}</h1><p>{html.escape(ISSUES[key]["summary"])}</p>')
 
     return app

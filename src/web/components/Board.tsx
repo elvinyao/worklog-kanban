@@ -2,11 +2,14 @@ import { useEffect,useLayoutEffect,useRef,useState,type DragEvent,type KeyboardE
 import { api,errorText,type Card,type Snapshot } from '../api';
 import { keyboardCommand,type BoardFocus } from '../keyboard';
 import { dropIndex,moveLayout,type Move } from '../drag';
+import {useLanguage} from '../i18n';
+import type {MessageKey} from '../i18n/core';
 import { Preview } from './Preview';
 export interface FocusRequest {target:BoardFocus;sequence:number}
 export function Board({snapshot,open,create,accept,reload,focusRequest}:{snapshot:Snapshot;open:(card:Card)=>void;create:(columnId:string)=>void;accept:(value:Snapshot)=>void;reload:()=>void;focusRequest:FocusRequest|null}){
+ const {t,column:columnLabel}=useLanguage();
  const [selected,setSelected]=useState<BoardFocus|null>(null);const selectedRef=useRef<BoardFocus|null>(null);
- const [pending,setPending]=useState<Move|null>(null);const busy=useRef(false);const [error,setError]=useState('');
+ const [pending,setPending]=useState<Move|null>(null);const busy=useRef(false);const [error,setError]=useState<MessageKey|''>('');
  const board=useRef<HTMLElement>(null);const cards=useRef(new Map<string,HTMLButtonElement>());const columns=useRef(new Map<string,HTMLElement>());
  const dragging=useRef<string|null>(null);const dragged=useRef(false);const hadFocus=useRef(false);const anchor=useRef({column:0,index:0});
  const dragSource=useRef<HTMLElement|null>(null);
@@ -45,23 +48,23 @@ export function Board({snapshot,open,create,accept,reload,focusRequest}:{snapsho
   const rect=event.currentTarget.getBoundingClientRect();const index=targetId?dropIndex(layout,id,targetId,event.clientY>rect.top+rect.height/2):layout.cards.filter(card=>card.columnId===columnId&&card.id!==id).length;
   hadFocus.current=true;focus({kind:'card',id});void move({id,columnId,index});
  }
- return <>{error&&<p role="alert" className="move-error error">{error}</p>}<main ref={board} className="board" aria-label="工作看板" data-revision={snapshot.revision} aria-busy={!!pending} onCompositionStart={()=>{composing.current=true;}} onCompositionEnd={()=>{composing.current=false;}} onKeyDown={keydown} onFocus={event=>{
+ return <>{error&&<p role="alert" className="move-error error">{t(error)}</p>}<main ref={board} className="board" aria-label={t("工作看板")} data-revision={snapshot.revision} aria-busy={!!pending} onCompositionStart={()=>{composing.current=true;}} onCompositionEnd={()=>{composing.current=false;}} onKeyDown={keydown} onFocus={event=>{
   const target=event.target as HTMLElement;const cardId=target.closest<HTMLElement>('[data-card-id]')?.dataset.cardId;if(cardId)remember({kind:'card',id:cardId});else if(target.dataset.navColumn)remember({kind:'column',id:target.dataset.navColumn,index:selectedRef.current?.kind==='column'?selectedRef.current.index:0});
  }}>
-  {layout.columns.map(column=><section ref={node=>{if(node)columns.current.set(column.id,node);else columns.current.delete(column.id);}} tabIndex={0} data-nav-column={column.id} data-column-id={column.id} className="column" role="region" aria-label={column.name} key={column.id} onDragOver={event=>{if(dragging.current&&!busy.current){event.preventDefault();event.dataTransfer.dropEffect='move';}}} onDrop={event=>drop(event,column.id)}>
-   <header className="column-heading"><h2>{column.name}</h2><span className="count">{layout.cards.filter(card=>card.columnId===column.id).length}</span><button className="icon" aria-label={'在'+column.name+'新建卡片'} onClick={()=>create(column.id)}>＋</button></header>
+  {layout.columns.map(column=><section ref={node=>{if(node)columns.current.set(column.id,node);else columns.current.delete(column.id);}} tabIndex={0} data-nav-column={column.id} data-column-id={column.id} className="column" role="region" aria-label={columnLabel(column)} key={column.id} onDragOver={event=>{if(dragging.current&&!busy.current){event.preventDefault();event.dataTransfer.dropEffect='move';}}} onDrop={event=>drop(event,column.id)}>
+   <header className="column-heading"><h2>{columnLabel(column)}</h2><span className="count">{layout.cards.filter(card=>card.columnId===column.id).length}</span><button className="icon" aria-label={t('在{column}新建卡片',{column:columnLabel(column)})} onClick={()=>create(column.id)}>＋</button></header>
    <div className="cards">{layout.cards.filter(card=>card.columnId===column.id).map(card=><article className={'card'+(selected?.kind==='card'&&selected.id===card.id?' selected':'')} key={card.id} data-card-id={card.id} draggable={!pending} onDragStart={event=>{
     if(busy.current||(event.target as HTMLElement).closest('a,input,textarea,select')){event.preventDefault();return;}dragSource.current=event.currentTarget;dragging.current=card.id;dragged.current=true;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',card.id);focus({kind:'card',id:card.id});
    }} onDragEnd={()=>{dragSource.current=null;dragging.current=null;setTimeout(()=>{dragged.current=false;},0);}} onDragOver={event=>{if(dragging.current&&!busy.current){event.preventDefault();event.stopPropagation();event.dataTransfer.dropEffect='move';}}} onDrop={event=>drop(event,card.columnId,card.id)}>
-    <button ref={node=>{if(node)cards.current.set(card.id,node);else cards.current.delete(card.id);}} data-nav-card={card.id} className="card-open" aria-label={'打开卡片：'+card.title} onClick={()=>{if(!busy.current&&!dragged.current)open(card);}}>
+    <button ref={node=>{if(node)cards.current.set(card.id,node);else cards.current.delete(card.id);}} data-nav-card={card.id} className="card-open" aria-label={t('打开卡片：{title}',{title:card.title})} onClick={()=>{if(!busy.current&&!dragged.current)open(card);}}>
      <span className="card-title">{card.title}</span>
      {card.notes&&<span className="card-notes">{card.notes}</span>}
-     <span className="card-tags">{card.jira&&<span className="tag">{card.jira.key}</span>}{card.mattermostLinks.length>0&&<span className="tag neutral">{card.mattermostLinks.length} 条消息</span>}</span>
+     <span className="card-tags">{card.jira&&<span className="tag">{card.jira.key}</span>}{card.mattermostLinks.length>0&&<span className="tag neutral">{t(card.mattermostLinks.length===1?'1 条消息':'{count} 条消息',{count:card.mattermostLinks.length})}</span>}</span>
     </button>
     {card.jira&&<Preview key={card.jira.url} resource={{kind:'jira',id:card.jira.key,url:card.jira.url}} compact/>}
    </article>)}</div>
-   {!layout.cards.some(card=>card.columnId===column.id)&&<p className="empty">从一张工作卡片开始</p>}
-   <button className="add-card" onClick={()=>create(column.id)}>＋ 添加卡片</button>
+   {!layout.cards.some(card=>card.columnId===column.id)&&<p className="empty">{t("从一张工作卡片开始")}</p>}
+   <button className="add-card" onClick={()=>create(column.id)}>＋ {t('添加卡片')}</button>
   </section>)}
  </main></>;
 }

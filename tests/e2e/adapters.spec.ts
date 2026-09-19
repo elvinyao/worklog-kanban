@@ -42,7 +42,7 @@ test('Mattermost reads only a post and its metadata; failures degrade locally',a
   const page=await alice.newPage();await page.goto(board+'/probe/');await expect(page.getByRole('status')).toHaveText('已连接');
   const start=(await inspect(control)).requests.length;
   expect(await read(page,'Mattermost')).toMatchObject({ok:true,data:{kind:'mattermost',author:'模拟作者',channel:'模拟团队',avatar:{mime:'image/png'}}});
-  for(const [mode,expected] of [['missing-user',{author:'未知用户'}],['missing-channel',{channel:null}],['avatar-failure',{author:'模拟作者'}]] as const){
+  for(const [mode,expected] of [['missing-user',{author:''}],['missing-channel',{channel:null}],['avatar-failure',{author:'模拟作者'}]] as const){
     await fault(control,mode);const result=await read(page,'Mattermost');expect(result).toMatchObject({ok:true,data:expected});
     if(mode==='avatar-failure' && result.ok)expect(result.data).not.toHaveProperty('avatar');
   }

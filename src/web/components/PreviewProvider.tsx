@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import type { Resource } from '../../contracts/resource-links';
 import { ExtensionClient } from '../extension-client';
 import { PreviewStore,type PreviewView } from '../state/preview';
+import {useLanguage} from '../i18n';
 import { releaseAvatars } from '../safe-content';
 type Connection='connecting'|'connected'|'unavailable';
 interface Context {views:ReadonlyMap<string,PreviewView>;connection:Connection;refresh:(key:string)=>void;refreshAll:()=>void;reconnect:()=>void}
@@ -30,6 +31,7 @@ export function PreviewProvider({resources,children}:{resources:Resource[];child
  return <Previews.Provider value={{views,connection,refresh:key=>storeRef.current?.refresh(key),refreshAll:()=>storeRef.current?.refreshAll(),reconnect:()=>setEpoch(value=>value+1)}}>{children}</Previews.Provider>;
 }
 export function PreviewToolbar(){
+ const {t}=useLanguage();
  const {connection,refreshAll,reconnect}=usePreviews();
- return <div className="preview-toolbar"><span data-testid="preview-connection">{connection==='connected'?'个人预览已连接':connection==='connecting'?'正在连接个人预览…':'扩展未连接，仍可编辑共享内容'}</span><div className="row-actions"><button disabled={connection!=='connected'} onClick={refreshAll}>刷新全部预览</button><button disabled={connection==='connecting'} onClick={reconnect}>重新连接扩展</button></div></div>;
+ return <div className="preview-toolbar"><span data-testid="preview-connection">{t(connection==='connected'?'个人预览已连接':connection==='connecting'?'正在连接个人预览…':'扩展未连接，仍可编辑共享内容')}</span><div className="row-actions"><button disabled={connection!=='connected'} onClick={refreshAll}>{t("刷新全部预览")}</button><button disabled={connection==='connecting'} onClick={reconnect}>{t("重新连接扩展")}</button></div></div>;
 }

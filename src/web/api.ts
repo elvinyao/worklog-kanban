@@ -1,3 +1,4 @@
+import type {MessageKey} from './i18n/core';
 import type { components } from '../generated/shared-api';
 export type Snapshot=components['schemas']['BoardSnapshot'];
 export type Card=components['schemas']['Card'];
@@ -7,7 +8,7 @@ type Models=components['schemas'];
 export class ApiError extends Error {
   constructor(public readonly code:string,public readonly status:number){super(code);}
 }
-export const errorText=(error:unknown):string=>{
+export const errorText=(error:unknown):MessageKey=>{
   if(error instanceof ApiError){
     if(error.status===409)return '共享内容已更新，请比较后重试。';
     if(error.status===404)return '内容已不存在，请刷新看板。';

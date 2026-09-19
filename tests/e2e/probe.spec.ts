@@ -16,7 +16,7 @@ test('probe presents readable results, timestamp, reconnect and simulated enviro
 test('missing extension is explicit and reconnect is available',async()=>{
   const browser=await chromium.launch();
   try{
-    const page=await browser.newPage();await page.goto(board+'/probe/');
+    const page=await browser.newPage({locale:'zh-CN'});await page.goto(board+'/probe/');
     await expect(page.getByRole('status')).toHaveText('扩展不可用',{timeout:6000});
     await expect(page.getByRole('button',{name:'重新连接',exact:true})).toBeEnabled();
     await expect(page.getByRole('button',{name:'读取 Jira',exact:true})).toBeDisabled();

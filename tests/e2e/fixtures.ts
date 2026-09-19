@@ -14,7 +14,7 @@ export const test = base.extend<{alice:BrowserContext;bob:BrowserContext}>({
 async function withProfile(use:(context:BrowserContext)=>Promise<void>) {
   const directory = await mkdtemp(path.join(os.tmpdir(),'worklog-profile-'));
   const extension = path.resolve('dist/extension-dummy');
-  const context = await chromium.launchPersistentContext(directory,{channel:'chromium',headless:true,ignoreDefaultArgs:['--disable-back-forward-cache'],args:['--disable-extensions-except='+extension,'--load-extension='+extension,'--host-resolver-rules=MAP board.localhost 127.0.0.1, MAP jira.localhost 127.0.0.1, MAP mattermost.localhost 127.0.0.1, MAP untrusted.localhost 127.0.0.1']});
+  const context = await chromium.launchPersistentContext(directory,{channel:'chromium',locale:'zh-CN',headless:true,ignoreDefaultArgs:['--disable-back-forward-cache'],args:['--disable-extensions-except='+extension,'--load-extension='+extension,'--host-resolver-rules=MAP board.localhost 127.0.0.1, MAP jira.localhost 127.0.0.1, MAP mattermost.localhost 127.0.0.1, MAP untrusted.localhost 127.0.0.1']});
   profiles.set(context,directory);
   try { await use(context); } finally { await context.close(); await rm(directory,{recursive:true,force:true}); }
 }

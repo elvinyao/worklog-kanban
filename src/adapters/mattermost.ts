@@ -19,7 +19,7 @@ export async function mattermostPreview(postId:string,team:string,config:SiteCon
   const base=config.mattermostBaseUrl+'/api/v4';
   const post=await readJSON(base+'/posts/'+resource.id,signal,config);
   if(post.id!==resource.id || typeof post.create_at!=='number' || !Number.isSafeInteger(post.create_at) || post.create_at<0 || !Number.isFinite(new Date(post.create_at).valueOf()))throw new ReadError('protocol');
-  const result:MattermostPreview={kind:'mattermost',postId:resource.id,url:resource.url,author:'未知用户',channel:null,createdAt:new Date(post.create_at).toISOString(),text:string(post.message)};
+  const result:MattermostPreview={kind:'mattermost',postId:resource.id,url:resource.url,author:'',channel:null,createdAt:new Date(post.create_at).toISOString(),text:string(post.message)};
   const userId=typeof post.user_id==='string' && POST_ID.test(post.user_id) ? post.user_id : null;
   const channelId=typeof post.channel_id==='string' && POST_ID.test(post.channel_id) ? post.channel_id : null;
   if(userId){

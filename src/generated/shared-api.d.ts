@@ -176,6 +176,8 @@ export interface components {
         };
         /** Column */
         Column: {
+            /** Defaultnamekey */
+            defaultNameKey?: ("todo" | "investigating" | "implementing" | "unitTesting" | "integrationTesting" | "done") | null;
             /** Id */
             id: string;
             /** Name */

@@ -56,7 +56,7 @@ it('keeps a single message when metadata/avatar is unavailable and only uses fix
  });
  vi.stubGlobal('fetch',fetcher);
  const result=await mattermostPreview(postId,'demo',config,signal());
- expect(result.text.length).toBeLessThanOrEqual(20000);expect(result.author).toBe('未知用户');expect(result.channel).toBeNull();expect(result.avatar).toBeUndefined();
+ expect(result.text.length).toBeLessThanOrEqual(20000);expect(result.author).toBe('');expect(result.channel).toBeNull();expect(result.avatar).toBeUndefined();
  expect(fetcher.mock.calls.map(c=>c[0])).toEqual([config.mattermostBaseUrl+'/api/v4/posts/'+postId,config.mattermostBaseUrl+'/api/v4/users/'+user,config.mattermostBaseUrl+'/api/v4/channels/'+channel,config.mattermostBaseUrl+'/api/v4/users/'+user+'/image']);
 });
 

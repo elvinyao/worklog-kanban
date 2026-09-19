@@ -25,7 +25,10 @@ test('private synthetic content stays out of Bob, shared responses, SQLite, even
  const database=process.env.WORKLOG_TEST_DATABASE!;const databaseBytes=await readFile(database);expect(databaseBytes.subarray(0,15).toString()).toBe('SQLite format 3');const files=[databaseBytes];try{files.push(await readFile(database+'-wal'));}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
  const persisted=Buffer.concat(files);expect(persisted.includes(Buffer.from(sharedCard.id))).toBe(true);expect(persisted.includes(Buffer.from('隔离测试的共享笔记'))).toBe(true);expect(persisted.includes(Buffer.from(marker))).toBe(false);
  const log=await readFile(process.env.WORKLOG_TEST_APP_LOG!,'utf8');expect(log).toContain('operation=card.create');expect(log).not.toContain(marker);
- for(const page of [a,b,control])expect(await page.evaluate(async()=>({local:Object.keys(localStorage),session:Object.keys(sessionStorage),databases:await indexedDB.databases(),caches:await caches.keys()}))).toEqual({local:[],session:[],databases:[],caches:[]});
+ // A manual preference may persist only its language code, even after viewing restricted content.
+ await a.getByLabel('语言 / Language / 言語').selectOption('ja');
+ await a.getByLabel('语言 / Language / 言語').selectOption('zh');
+ for(const page of [a,b,control])expect(await page.evaluate(async()=>({local:Object.entries(localStorage),session:Object.keys(sessionStorage),databases:await indexedDB.databases(),caches:await caches.keys()}))).toEqual({local:page===a?[['worklog.language','zh']]:[],session:[],databases:[],caches:[]});
  expect(await worker.evaluate(async()=>({databases:await indexedDB.databases(),caches:await caches.keys(),storageAPI:typeof chrome.storage}))).toEqual({databases:[],caches:[],storageAPI:'undefined'});
  const modes=await worker.evaluate(()=>Reflect.get(globalThis,'__cacheModes') as string[]);expect(modes.length).toBeGreaterThan(0);expect(modes.every(mode=>mode==='no-store')).toBe(true);
  const before=(await inspect(control)).requests.length;await a.close();const reopened=await alice.newPage();await reopened.goto(board);await reopened.getByRole('button',{name:'打开卡片：隔离验收卡片',exact:true}).click();await expect(reopened.getByRole('dialog').getByText(new RegExp(marker)).first()).toBeVisible();expect((await inspect(control)).requests.length).toBeGreaterThan(before);

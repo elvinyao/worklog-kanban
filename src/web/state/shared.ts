@@ -1,4 +1,5 @@
 import type { Snapshot } from '../api';
+export type SyncStatus='正在连接'|'连接中断，正在重连'|'已同步'|'读取失败，请重试';
 export interface Subscription { open:()=>void; revision:(value:number)=>void; error:()=>void }
 export class SharedBoard {
  private remove:(()=>void)|undefined;
@@ -9,7 +10,7 @@ export class SharedBoard {
  private applied=-1;
  private refresh=false;
  private connected=false;
- constructor(private subscribe:(listener:Subscription)=>()=>void,private fetcher:(signal:AbortSignal)=>Promise<Snapshot>,private changed:(snapshot:Snapshot)=>void,private status:(status:string)=>void){}
+ constructor(private subscribe:(listener:Subscription)=>()=>void,private fetcher:(signal:AbortSignal)=>Promise<Snapshot>,private changed:(snapshot:Snapshot)=>void,private status:(status:SyncStatus)=>void){}
  start(){
    if(this.remove||this.closed)return;
    this.status('正在连接');

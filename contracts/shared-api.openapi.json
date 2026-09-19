@@ -126,6 +126,25 @@
       "Column": {
         "additionalProperties": false,
         "properties": {
+          "defaultNameKey": {
+            "anyOf": [
+              {
+                "enum": [
+                  "todo",
+                  "investigating",
+                  "implementing",
+                  "unitTesting",
+                  "integrationTesting",
+                  "done"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Defaultnamekey"
+          },
           "id": {
             "maxLength": 100,
             "minLength": 1,

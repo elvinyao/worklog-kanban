@@ -34,6 +34,20 @@ def test_initial_columns_and_restart_preserve_changes(store):
     assert reopened.snapshot() == changed
 
 
+def test_only_unmodified_seed_columns_have_localized_labels(store):
+    initial=store.snapshot()
+    assert [c.defaultNameKey for c in initial.columns]==['todo','investigating','implementing','unitTesting','integrationTesting','done']
+    changed=store.create_column(ChangeColumn(name='完成',expectedBoardRevision=0),'127.0.0.1')
+    assert changed.columns[-1].defaultNameKey is None
+    first=changed.columns[0]
+    renamed=store.rename_column(first.id,ChangeColumn(name=first.name,expectedBoardRevision=changed.revision),'127.0.0.1')
+    assert renamed.columns[0].defaultNameKey is None
+    reversed_board=store.reorder_columns(ReorderColumns(columnIds=[c.id for c in reversed(renamed.columns)],expectedBoardRevision=renamed.revision),'127.0.0.1')
+    assert next(c for c in reversed_board.columns if c.id==initial.columns[-1].id).defaultNameKey=='done'
+    reopened=Store(store.path,CONFIG);reopened.initialize()
+    assert reopened.snapshot()==reversed_board
+
+
 def test_links_normalize_without_overwriting_shared_notes(store):
     board = create(store, notes='共享笔记', jiraUrl='demo-1', mattermostLinks=[{'url':CONFIG.mattermostBaseUrl+'/demo/pl/'+'a'*26,'description':'共享说明'}])
     card = board.cards[0]
