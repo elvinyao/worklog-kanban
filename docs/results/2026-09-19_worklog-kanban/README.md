@@ -6,7 +6,9 @@
 
 **T01–T15 的实现与自动验证已完成；一键 Docker 默认环境已经启动。沿用 main 本地提交，dummy 整体手动验收仍待确认。**
 
-受测应用版本 `add5fbb`；98 后端测试、69 前端逻辑测试、普通 Chromium 完整 25 项及补充安全用例 1 项通过，独立 StrictMode 构建 9 项通过。[综合确认结果](acceptance-001/総合確認結果.md)逐项映射 45 个 dummy 观察点，明确 43 项自动/静态范围内通过、K02 部分通过、R01 未执行。
+T14 受测应用版本 `add5fbb`；98 后端测试、69 前端逻辑测试、普通 Chromium 完整 25 项及补充安全用例 1 项通过，独立 StrictMode 构建 9 项通过。[综合确认结果](acceptance-001/総合確認結果.md)逐项映射 45 个 dummy 观察点，明确 43 项自动/静态范围内通过、K02 部分通过、R01 未执行。
+
+T15 受测实现 `cbb6624`；后端共 105 项通过，一键启动/更新/停止/删除、数据保留和更新失败恢复已实测。干净工作区的默认 Git 自动更新也已通过，详见 [Docker 综合确认](acceptance-002/総合確認結果.md)。
 
 用户已要求使用 dummy 环境，并确认目标 Jira 为 DC / Server 9.7。Mattermost 仅按 API v4 所需子集模拟，实际服务器版本未知。本次交付目标为完整 dummy 版本；公司实测单列。用户在修订计划后明确回复“OK，开始”，据此执行 T01–T14，不重复确认已批准的技术栈或 main。
 
@@ -42,12 +44,12 @@
 | T12 隔离与故障验收 | 自动验收完成；品牌浏览器待确认 | [初验与测试修正](task12_isolation/attempt-001/実行結果.md)、[25 普通与 9 StrictMode 浏览器通过](task12_isolation/attempt-002/実行結果.md)、[手动环境缺项](manual/run-002/実行結果.md) |
 | T13 Python 生产交付与运行说明 | 完成 | [初验及审阅 RED](task13_production/attempt-001/実行結果.md)、[7 项独立运行与重启复验](task13_production/attempt-002/実行結果.md) |
 | T14 自审和最终证据 | 审查与记录完成；整体手动验收待确认 | [最终回归及补充初验](task14_review/attempt-001/実行結果.md)、[共享文本安全复验](task14_review/attempt-002/実行結果.md)、[综合确认结果](acceptance-001/総合確認結果.md) |
-| T15 集成 Docker 生命周期 | 实现、真实生命周期与 105 项后端回归完成 | [追加计划](../../2026-09-19_docker-operations/対応計画.md)、[初始测试](task15_docker/attempt-001/実行結果.md)、[审阅修复](task15_docker/attempt-002/実行結果.md)、[真实运行和自审结果](task15_docker/attempt-003/実行結果.md) |
+| T15 集成 Docker 生命周期 | 完成；默认环境已启动 | [追加计划](../../2026-09-19_docker-operations/対応計画.md)、[真实运行和自审](task15_docker/attempt-003/実行結果.md)、[默认自动更新及综合确认](acceptance-002/総合確認結果.md) |
 
 ## 下一步与阻碍
 
 - 默认 Docker 看板、Jira、Mattermost 已启动，可访问 `http://board.localhost:4173/`；四个双击入口和 `bash docker.sh` 用法见 [运行说明](../../运行说明.md)。个人预览首次需加载 `dist/extension-docker`。没有外部部署或 push。
-- 剩余 dummy 必需项：按 M06 验证真实 OS 输入法；按 M07 在实际 Chrome、Edge 安装扩展并完成核心操作。记录到新的 manual/run，再建立 acceptance-002，不覆盖本次记录。
+- 剩余 dummy 必需项：按 M06 验证真实 OS 输入法；按 M07 在实际 Chrome、Edge 安装扩展并完成核心操作。记录到新的 manual/run，再建立 acceptance-003，不覆盖本次记录。
 - Docker 接口需要沙箱外权限，已通过项目 runner 获准访问 OrbStack；不在主机执行项目代码。
 - 公司环境尚无：仅影响未来真实 SSO、权限和部署网络验收，不阻塞本计划中的 dummy 功能。
 - 三个本地域名和扩展在容器 Chromium 中已验证。此前手动检查时 Mac 锁定，原生应用操作不可用，未发现 Edge；该次限制详见 manual/run-002。不能把容器自动化记作品牌浏览器/OS IME 通过。
