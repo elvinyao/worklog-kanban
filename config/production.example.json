@@ -1,0 +1,6 @@
+{
+  "mode": "production",
+  "boardOrigin": "https://board.example.invalid",
+  "jiraBaseUrl": "https://jira.example.invalid/jira",
+  "mattermostBaseUrl": "https://mattermost.example.invalid"
+}

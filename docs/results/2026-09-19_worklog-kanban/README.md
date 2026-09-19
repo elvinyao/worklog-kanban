@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-**用户已批准完整实施计划，沿用 main；T01–T12 已实现并完成对应自动验证，继续 T13 Python 生产交付。品牌浏览器和真实 IME 手动验收仍有环境缺项。**
+**用户已批准完整实施计划，沿用 main；T01–T13 已实现并完成对应自动验证，继续 T14 最终审查。品牌浏览器和真实 IME 手动验收仍有环境缺项。**
 
 用户已要求使用 dummy 环境，并确认目标 Jira 为 DC / Server 9.7。Mattermost 仅按 API v4 所需子集模拟，实际服务器版本未知。本次交付目标为完整 dummy 版本；公司实测单列。用户在修订计划后明确回复“OK，开始”，据此执行 T01–T14，不重复确认已批准的技术栈或 main。
 
@@ -38,12 +38,12 @@
 | T10 个人预览与刷新 | 完成 | [RED 与首轮实现](task10_previews/attempt-001/実行結果.md)、[消息别名去重](task10_previews/attempt-002/実行結果.md)、[StrictMode/超时回归](task10_previews/attempt-003/実行結果.md)、[69 逻辑及普通/开发浏览器复验](task10_previews/attempt-004/実行結果.md) |
 | T11 键盘、拖拽与焦点 | 实现及自动验证完成；实际 IME 待确认 | [初始 RED 与初验](task11_interaction/attempt-001/実行結果.md)、[并发拖拽 RED→GREEN 与 4 项浏览器复验](task11_interaction/attempt-002/実行結果.md) |
 | T12 隔离与故障验收 | 自动验收完成；品牌浏览器待确认 | [初验与测试修正](task12_isolation/attempt-001/実行結果.md)、[25 普通与 9 StrictMode 浏览器通过](task12_isolation/attempt-002/実行結果.md)、[手动环境缺项](manual/run-002/実行結果.md) |
-| T13 Python 生产交付与运行说明 | 未开始 | 无 |
-| T14 自审和最终证据 | 未开始 | 无 |
+| T13 Python 生产交付与运行说明 | 完成 | [初验及审阅 RED](task13_production/attempt-001/実行結果.md)、[7 项独立运行与重启复验](task13_production/attempt-002/実行結果.md) |
+| T14 自审和最终证据 | 进行中 | 等待最终回归与记录 |
 
 ## 下一步与阻碍
 
-- 继续 T13–T14 生产交付与最终审查。
+- 完成 T14 最终回归、45 项矩阵映射和最终记录。
 - Docker 接口需要沙箱外权限，已通过项目 runner 获准访问 OrbStack；不在主机执行项目代码。
 - 公司环境尚无：仅影响未来真实 SSO、权限和部署网络验收，不阻塞本计划中的 dummy 功能。
 - 三个本地域名和扩展在容器 Chromium 中已验证。Mac 锁定，原生应用操作不可用；未发现 Edge。M06 真实 IME、M07 Chrome/Edge 留待用户环境，不能把自动化记作该项通过。
