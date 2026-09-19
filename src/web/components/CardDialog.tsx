@@ -2,6 +2,7 @@ import { useEffect,useState } from 'react';
 import { api,ApiError,errorText,type Card,type Snapshot } from '../api';
 import { draftFrom,isDirty,payloadFrom,reconcileDraft,type Draft,type Fields } from '../state/drafts';
 import { Modal } from './Modal';
+import { Preview } from './Preview';
 
 export function CardDialog({card,columnId,snapshot,accept,reload,close}:{card:Card|undefined;columnId:string;snapshot:Snapshot;accept:(value:Snapshot)=>void;reload:()=>void;close:()=>void}){
  const [draft,setDraft]=useState<Draft>(()=>draftFrom(card??{id:'new',title:'',notes:'',version:0,columnId,position:0,jira:null,mattermostLinks:[]}));
@@ -44,6 +45,7 @@ export function CardDialog({card,columnId,snapshot,accept,reload,close}:{card:Ca
      <button type="button" disabled={draft.fields.mattermostLinks.length>=20} onClick={()=>field('mattermostLinks',[...draft.fields.mattermostLinks,{url:'',description:''}])}>＋ 添加消息关联</button>
     </fieldset>
     {card?.mattermostLinks.map((link,index)=><p className="original-link" key={link.id}><a href={link.url} target="_blank" rel="noopener noreferrer">打开消息原文 {index+1} ↗</a></p>)}
+    {card&&(card.jira||card.mattermostLinks.length>0)&&<div className="personal-detail"><div className="section-title"><h3>个人预览</h3><span className="hint">按你的原系统身份读取</span></div>{card.jira&&<Preview key={card.jira.url} resource={{kind:'jira',id:card.jira.key,url:card.jira.url}}/>}{card.mattermostLinks.map(link=><Preview key={link.id+link.url} resource={{kind:'mattermost',id:link.postId,team:link.team,url:link.url}}/>)}</div>}
     {changed&&<div className="notice"><strong>共享内容已更新，本地草稿已保留。</strong><details open={conflict}><summary>比较当前共享内容</summary><p>标题：{card.title}</p><pre>{card.notes||'（笔记为空）'}</pre><p>Jira：{card.jira?.url??'未关联'}</p>{card.mattermostLinks.map(link=><p key={link.id}>{link.url}<br/>{link.description}</p>)}</details></div>}
     {error&&<p role="alert" className="error">{error}</p>}
     {closing&&<div className="notice" role="alert"><p>有未保存的修改。</p><div className="row-actions"><button type="button" disabled={saving} onClick={()=>setClosing(false)}>继续编辑</button><button type="button" disabled={saving} onClick={requestCloseDiscard}>放弃修改并关闭</button></div></div>}

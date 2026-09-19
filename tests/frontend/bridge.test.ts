@@ -20,7 +20,8 @@ it('ignores an old port disconnect after page restoration opens a new port',asyn
  try {
   await import('../../src/extension/bridge');
   const hello=()=>listeners.get('message')!({origin:sites.boardOrigin,source:fakeWindow,data:{channel:'worklog:request',payload:{version:1,id:'hello',op:'hello'}}});
-  hello();listeners.get('pagehide')!({});hello();
+  hello();listeners.get('pagehide')!({});hello();expect(index).toBe(1);
+  listeners.get('pageshow')!({persisted:true});hello();expect(index).toBe(2);
   const oldDisconnect=ports[0]!.onDisconnect.addListener.mock.calls[0]![0] as ()=>void;
   oldDisconnect();
   expect(posts).not.toHaveBeenCalled();

@@ -1,21 +1,30 @@
-import { useEffect,useRef,useState } from 'react';
+import { useEffect,useMemo,useRef,useState } from 'react';
+import type { Resource } from '../contracts/resource-links';
 import { api,type Snapshot } from './api';
 import { SharedBoard,subscribe } from './state/shared';
 import { Board } from './components/Board';
 import { CardDialog } from './components/CardDialog';
 import { ColumnDialog } from './components/ColumnDialog';
+import { PreviewProvider,PreviewToolbar } from './components/PreviewProvider';
 type Selection={kind:'card';id:string}|{kind:'new';columnId:string}|{kind:'columns'}|null;
 export function App(){
  const [snapshot,setSnapshot]=useState<Snapshot>();const [status,setStatus]=useState('正在连接');const [selection,setSelection]=useState<Selection>(null);
  const shared=useRef<SharedBoard|null>(null);
- useEffect(()=>{const state=new SharedBoard(subscribe,api.board,setSnapshot,setStatus);shared.current=state;state.start();return()=>{state.close();shared.current=null;};},[]);
+ useEffect(()=>{
+  const start=()=>{shared.current?.close();const state=new SharedBoard(subscribe,api.board,setSnapshot,setStatus);shared.current=state;state.start();};
+  const hide=()=>{shared.current?.close();shared.current=null;};const show=(event:PageTransitionEvent)=>{if(event.persisted)start();};
+  start();window.addEventListener('pagehide',hide);window.addEventListener('pageshow',show);
+  return()=>{hide();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show);};
+ },[]);
+ const resources=useMemo<Resource[]>(()=>snapshot?.cards.flatMap(card=>[...(card.jira?[{kind:'jira' as const,id:card.jira.key,url:card.jira.url}]:[]),...card.mattermostLinks.map(link=>({kind:'mattermost' as const,id:link.postId,team:link.team,url:link.url}))])??[],[snapshot]);
  const accept=(value:Snapshot)=>shared.current?.accept(value);const reload=()=>shared.current?.reload();
  const card=selection?.kind==='card'?snapshot?.cards.find(item=>item.id===selection.id):undefined;
- return <><header className="app-header"><div className="brand"><span className="brand-mark">w.</span><div><h1>Worklog</h1><p>让工作进展有迹可循</p></div></div><div className="header-meta">{__SITE_CONFIG__.mode==='dummy'&&<span className="demo-badge">模拟环境</span>}<span role="status" className="sync-status">● {status}</span><button onClick={reload}>重新同步</button></div></header>
+ return <PreviewProvider resources={resources}><header className="app-header"><div className="brand"><span className="brand-mark">w.</span><div><h1>Worklog</h1><p>让工作进展有迹可循</p></div></div><div className="header-meta">{__SITE_CONFIG__.mode==='dummy'&&<span className="demo-badge">模拟环境</span>}<span role="status" className="sync-status">● {status}</span><button onClick={reload}>重新同步</button></div></header>
   <div className="board-toolbar"><div><span className="eyebrow">TEAM WORKSPACE</span><h2>共享工作看板 <span>{snapshot?.cards.length??0} 项工作</span></h2></div><div className="row-actions"><button disabled={!snapshot} onClick={()=>setSelection({kind:'columns'})}>管理列</button><button className="primary" aria-label="新建卡片" disabled={!snapshot?.columns.length} onClick={()=>{const column=snapshot?.columns[0];if(column)setSelection({kind:'new',columnId:column.id});}}>＋ 新建卡片</button></div></div>
+  <PreviewToolbar/>
   {snapshot?<Board snapshot={snapshot} open={item=>setSelection({kind:'card',id:item.id})} create={columnId=>setSelection({kind:'new',columnId})}/>:<p className="loading">正在读取共享看板…</p>}
   <footer className="app-footer"><span>共享笔记 · 即时同步</span><span>Jira 与消息原文保留在各自系统</span></footer>
   {snapshot&&selection?.kind==='columns'&&<ColumnDialog snapshot={snapshot} accept={accept} reload={reload} close={()=>setSelection(current=>current===selection?null:current)}/>}
   {snapshot&&(selection?.kind==='new'||(selection?.kind==='card'&&card))&&<CardDialog key={selection.kind==='card'?selection.id:'new'} card={card} columnId={selection.kind==='new'?selection.columnId:card!.columnId} snapshot={snapshot} accept={accept} reload={reload} close={()=>setSelection(current=>current===selection?null:current)}/>}
- </>;
+ </PreviewProvider>;
 }

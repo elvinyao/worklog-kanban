@@ -1,5 +1,6 @@
 import { record, type SiteConfig } from '../contracts/config';
 import { parseReply, parseRequest, type PreviewReply, type PreviewRequest } from '../contracts/preview-messages';
+import { TransportError } from './transport-error';
 
 export class ExtensionClient {
   private pending = new Map<string,{resolve:(v:PreviewReply)=>void;reject:(e:Error)=>void;timer:ReturnType<typeof setTimeout>}>();
@@ -19,10 +20,10 @@ export class ExtensionClient {
     } catch { /* Ignore invalid replies. */ }
   };
   request(request:PreviewRequest,timeoutMs=30000):Promise<PreviewReply> {
-    if (this.disposed || this.pending.has(request.id)) return Promise.reject(new Error('disconnected'));
+    if (this.disposed || this.pending.has(request.id)) return Promise.reject(new TransportError('disconnected'));
     parseRequest(request);
     return new Promise((resolve,reject) => {
-      const timer = setTimeout(() => { this.pending.delete(request.id); this.cancel(request.id); reject(new Error('disconnected')); },timeoutMs);
+      const timer = setTimeout(() => { this.pending.delete(request.id); this.cancel(request.id); reject(new TransportError('network')); },timeoutMs);
       this.pending.set(request.id,{resolve,reject,timer});
       window.postMessage({channel:'worklog:request',payload:request},this.config.boardOrigin);
     });
@@ -30,9 +31,9 @@ export class ExtensionClient {
   cancel(id:string) {
     if (!this.disposed) window.postMessage({channel:'worklog:request',payload:{version:1,id:crypto.randomUUID(),op:'cancel',targetId:id}},this.config.boardOrigin);
     const pending = this.pending.get(id);
-    if (pending) { clearTimeout(pending.timer); pending.reject(new Error('cancelled')); this.pending.delete(id); }
+    if (pending) { clearTimeout(pending.timer); pending.reject(new TransportError('cancelled')); this.pending.delete(id); }
   }
-  private failAll() { for (const entry of this.pending.values()) { clearTimeout(entry.timer); entry.reject(new Error('disconnected')); } this.pending.clear(); }
+  private failAll() { for (const entry of this.pending.values()) { clearTimeout(entry.timer); entry.reject(new TransportError('disconnected')); } this.pending.clear(); }
   dispose() {
     for (const id of this.pending.keys()) this.cancel(id);
     this.disposed = true; this.failAll(); window.removeEventListener('message',this.receive);

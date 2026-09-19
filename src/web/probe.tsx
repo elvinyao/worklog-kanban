@@ -5,6 +5,7 @@ import { validateConfig } from '../contracts/config';
 import { parseResource } from '../contracts/resource-links';
 import type { PreviewReply, PreviewRequest } from '../contracts/preview-messages';
 import { ExtensionClient } from './extension-client';
+import { TransportError } from './transport-error';
 import './probe.css';
 const config = validateConfig(__SITE_CONFIG__);
 const errors = {login_required:'请到原站点重新登录，然后手动读取。',unavailable:'当前会话无法读取此资源。',network:'读取暂时失败，请稍后重试。',rate_limited:'原站点限制了读取频率，请等待后重试。',protocol:'原站点返回的内容无法识别，未作为预览显示。',disconnected:'扩展连接已断开，请重新连接。'};
@@ -68,8 +69,8 @@ function Probe() {
       setResult(reply);
       if(reply.ok)setLastSuccess(Date.now());
       else if(reply.error.code==='rate_limited')setRetryAt(Date.now()+(reply.error.retryAfterMs??60000));
-    } catch {
-      if(mine===generation.current)setResult({version:1,id,ok:false,error:{code:'disconnected'}});
+    } catch (error) {
+      if(mine===generation.current)setResult({version:1,id,ok:false,error:{code:error instanceof TransportError&&error.code==='network'?'network':'disconnected'}});
     } finally {if(mine===generation.current){activeId.current=null;setBusy(false);}}
   }
   const preview=result?.ok && 'kind' in result.data ? result.data : null;

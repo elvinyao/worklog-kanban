@@ -1,4 +1,5 @@
 import type { Card,Snapshot } from '../api';
+import { Preview } from './Preview';
 export function Board({snapshot,open,create}:{snapshot:Snapshot;open:(card:Card)=>void;create:(columnId:string)=>void}){
  return <main className="board" aria-label="工作看板" data-revision={snapshot.revision}>
   {snapshot.columns.map(column=><section className="column" role="region" aria-label={column.name} key={column.id}>
@@ -9,6 +10,7 @@ export function Board({snapshot,open,create}:{snapshot:Snapshot;open:(card:Card)
      {card.notes&&<span className="card-notes">{card.notes}</span>}
      <span className="card-tags">{card.jira&&<span className="tag">{card.jira.key}</span>}{card.mattermostLinks.length>0&&<span className="tag neutral">{card.mattermostLinks.length} 条消息</span>}</span>
     </button>
+    {card.jira&&<Preview key={card.jira.url} resource={{kind:'jira',id:card.jira.key,url:card.jira.url}} compact/>}
    </article>)}</div>
    {!snapshot.cards.some(card=>card.columnId===column.id)&&<p className="empty">从一张工作卡片开始</p>}
    <button className="add-card" onClick={()=>create(column.id)}>＋ 添加卡片</button>
