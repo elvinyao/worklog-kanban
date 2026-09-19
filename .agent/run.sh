@@ -7,6 +7,12 @@ PYTHON_IMAGE="python:3.13.15-bookworm"
 NODE_IMAGE="node:24.21.0-bookworm"
 DEV_IMAGE="worklog-kanban-dev:python3.13.15-node24.21.0"
 
+# User-facing Docker lifecycle operations do not need the development toolchain.
+if [ "${1:-}" = app ]; then
+  shift
+  exec bash "${PROJECT_ROOT}/docker/manage.sh" "$@"
+fi
+
 if ! command -v docker >/dev/null 2>&1; then
   echo 'Docker CLI is unavailable. Install/start Docker; host execution is disabled.' >&2
   exit 127

@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-**T01–T14 的实现、自动验证与交付记录已完成，沿用 main 本地提交。当前为“实现完成・手动验收待确认”，尚未宣称 dummy 全量验收通过。**
+**T01–T15 的实现与自动验证已完成；一键 Docker 默认环境已经启动。沿用 main 本地提交，dummy 整体手动验收仍待确认。**
 
 受测应用版本 `add5fbb`；98 后端测试、69 前端逻辑测试、普通 Chromium 完整 25 项及补充安全用例 1 项通过，独立 StrictMode 构建 9 项通过。[综合确认结果](acceptance-001/総合確認結果.md)逐项映射 45 个 dummy 观察点，明确 43 项自动/静态范围内通过、K02 部分通过、R01 未执行。
 
@@ -42,10 +42,11 @@
 | T12 隔离与故障验收 | 自动验收完成；品牌浏览器待确认 | [初验与测试修正](task12_isolation/attempt-001/実行結果.md)、[25 普通与 9 StrictMode 浏览器通过](task12_isolation/attempt-002/実行結果.md)、[手动环境缺项](manual/run-002/実行結果.md) |
 | T13 Python 生产交付与运行说明 | 完成 | [初验及审阅 RED](task13_production/attempt-001/実行結果.md)、[7 项独立运行与重启复验](task13_production/attempt-002/実行結果.md) |
 | T14 自审和最终证据 | 审查与记录完成；整体手动验收待确认 | [最终回归及补充初验](task14_review/attempt-001/実行結果.md)、[共享文本安全复验](task14_review/attempt-002/実行結果.md)、[综合确认结果](acceptance-001/総合確認結果.md) |
+| T15 集成 Docker 生命周期 | 实现、真实生命周期与 105 项后端回归完成 | [追加计划](../../2026-09-19_docker-operations/対応計画.md)、[初始测试](task15_docker/attempt-001/実行結果.md)、[审阅修复](task15_docker/attempt-002/実行結果.md)、[真实运行和自审结果](task15_docker/attempt-003/実行結果.md) |
 
 ## 下一步与阻碍
 
-- 可按 [运行说明](../../运行说明.md) 启动 dummy 完整看板或重新生成纯 Python 生产包；没有外部部署或 push。
+- 默认 Docker 看板、Jira、Mattermost 已启动，可访问 `http://board.localhost:4173/`；四个双击入口和 `bash docker.sh` 用法见 [运行说明](../../运行说明.md)。个人预览首次需加载 `dist/extension-docker`。没有外部部署或 push。
 - 剩余 dummy 必需项：按 M06 验证真实 OS 输入法；按 M07 在实际 Chrome、Edge 安装扩展并完成核心操作。记录到新的 manual/run，再建立 acceptance-002，不覆盖本次记录。
 - Docker 接口需要沙箱外权限，已通过项目 runner 获准访问 OrbStack；不在主机执行项目代码。
 - 公司环境尚无：仅影响未来真实 SSO、权限和部署网络验收，不阻塞本计划中的 dummy 功能。

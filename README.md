@@ -4,21 +4,35 @@
 
 共享标题、笔记和关联保存在 SQLite；外部正文和头像只保留在当前查看者的页面内存。默认提供 Jira DC / Server 9.7 与 Mattermost API v4 的独立模拟服务，无需公司环境。
 
-## 本地启动
+## 一键运行
 
-需要 Docker/OrbStack；在仓库根目录执行：
+只需安装并启动 Docker Desktop 或 OrbStack（含 Docker Compose v2），无需安装 Python、Node 或数据库。
+
+macOS 直接双击仓库里的 **`启动.command`、`更新.command`、`停止.command`、`删除.command`**。也可在仓库根目录使用：
 
 ```text
-bash .agent/run.sh python -m tools.sync_deps
-bash .agent/run.sh npm run build
-bash .agent/run.sh python -m tools.dev
+bash docker.sh start
+bash docker.sh update
+bash docker.sh stop
+bash docker.sh remove
 ```
 
-打开 [看板](http://board.localhost:4173/)。共享编辑无需扩展；要看个人预览，按[运行说明](docs/运行说明.md)加载 `dist/extension-dummy`，并在 [Jira 模拟页](http://jira.localhost:4180/jira/__dummy/)和 [Mattermost 模拟页](http://mattermost.localhost:4181/__dummy/)登录 Alice 或 Bob。不同身份使用独立浏览器 profile。
+| 操作 | 效果 |
+| --- | --- |
+| 启动 | 自动构建，后台启动看板、Jira 和 Mattermost 模拟服务，输出访问地址 |
+| 更新 | 自动获取 Git 当前跟踪分支的最新代码，重建并替换；本地修改或分叉时停止并保留现场 |
+| 停止 | 停止三个服务，保留容器和共享数据 |
+| 删除 | 删除本项目容器及网络，保留共享数据；再次启动可继续使用 |
+
+首次启动需要联网下载镜像和依赖。出现 `Ready` 后打开 [看板](http://board.localhost:4173/)。关闭终端后服务继续运行。查看状态用 `bash docker.sh status`，查看日志用 `bash docker.sh logs`。只重建当前本地代码用 `bash docker.sh update --local`。
+
+共享编辑可直接使用。个人预览需要**首次手动加载**自动生成的 `dist/extension-docker` 浏览器扩展，然后在 [Jira 模拟页](http://jira.localhost:4180/jira/__dummy/)和 [Mattermost 模拟页](http://mattermost.localhost:4181/__dummy/)登录 Alice 或 Bob。更新后在扩展管理页点“重新加载”。详见[运行说明](docs/运行说明.md)；不同身份使用独立浏览器 profile。
+
+需要连共享数据一起永久删除时，明确执行 `bash docker.sh remove --purge-data --yes`。普通删除不会清空看板。
 
 - [完整运行、快捷键与生产打包说明](docs/运行说明.md)
 - [公司接入检查单](docs/公司接入检查单.md)
 - [实施计划](docs/2026-09-19_worklog-kanban/対応計画.md)
 - [验证结果与尚未完成的手动验收](docs/results/2026-09-19_worklog-kanban/README.md)
 
-所有安装、构建、测试和服务启动都经 Docker runner；生产产物运行只需 Python。不会自动部署到外部环境。
+上述入口统一转到 Docker runner；容器内自动完成构建和运行。当前一键模式提供本地 dummy 环境，真实公司接入另见运行说明。
