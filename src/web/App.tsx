@@ -1,5 +1,5 @@
 import { useEffect,useMemo,useRef,useState } from 'react';
-import {LanguageSelect,useLanguage} from './i18n';
+import {LanguageSwitcher,useLanguage} from './i18n';
 import type {SyncStatus} from './state/shared';
 import type { Resource } from '../contracts/resource-links';
 import { api,type Snapshot } from './api';
@@ -28,7 +28,7 @@ export function App(){
   if(selection?.kind==='card'||selection?.kind==='new')setFocusRequest(previous=>({target:selection.kind==='card'?{kind:'card',id:selection.id}:{kind:'column',id:selection.columnId,index:0},sequence:(previous?.sequence??0)+1}));
   setSelection(null);
  };
- return <PreviewProvider resources={resources}><header className="app-header"><div className="brand"><span className="brand-mark">w.</span><div><h1>Worklog</h1><p>{t("让工作进展有迹可循")}</p></div></div><div className="header-meta"><LanguageSelect/>{__SITE_CONFIG__.mode==='dummy'&&<span className="demo-badge">{t("模拟环境")}</span>}<span role="status" className="sync-status">● {t(status)}</span><button onClick={reload}>{t("重新同步")}</button></div></header>
+ return <PreviewProvider resources={resources}><header className="app-header"><div className="brand"><span className="brand-mark">w.</span><div><h1>Worklog</h1><p>{t("让工作进展有迹可循")}</p></div></div><div className="header-meta"><LanguageSwitcher/>{__SITE_CONFIG__.mode==='dummy'&&<span className="demo-badge">{t("模拟环境")}</span>}<span role="status" className="sync-status">● {t(status)}</span><button onClick={reload}>{t("重新同步")}</button></div></header>
   <div className="board-toolbar"><div><span className="eyebrow">{t('团队空间')}</span><h2>{t('共享工作看板')} <span>{t(snapshot?.cards.length===1?'1 项工作':'{count} 项工作',{count:snapshot?.cards.length??0})}</span></h2></div><div className="row-actions"><button disabled={!snapshot} onClick={()=>setSelection({kind:'columns'})}>{t("管理列")}</button><button className="primary" aria-label={t("新建卡片")} disabled={!snapshot?.columns.length} onClick={()=>{const column=snapshot?.columns[0];if(column)setSelection({kind:'new',columnId:column.id});}}>＋ {t('新建卡片')}</button></div></div>
   <PreviewToolbar/>
   {snapshot?<Board snapshot={snapshot} open={item=>setSelection({kind:'card',id:item.id})} create={columnId=>setSelection({kind:'new',columnId})} accept={accept} reload={reload} focusRequest={focusRequest}/>:<p className="loading">{t("正在读取共享看板…")}</p>}

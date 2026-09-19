@@ -1,22 +1,17 @@
-import {browserLanguages,browserStorage,isLocale,localeTags,LOCALE_KEY,messages,readPreference,resolveLocale,savePreference,translate,type MessageKey} from '../web/i18n/core';
+import {browserLanguages,detectLocale,localeTags,messages,translate,type MessageKey} from '../web/i18n/core';
 
-const select=document.querySelector<HTMLSelectElement>('#language');
-let preference=readPreference(browserStorage());
 let status:MessageKey|undefined;
 const params={kind:document.querySelector<HTMLElement>('main')?.dataset.kind??'',public:'a'.repeat(26),private:'b'.repeat(26)};
 function render(){
- const locale=resolveLocale(preference,browserLanguages());
+ const locale=detectLocale(browserLanguages());
  document.documentElement.lang=localeTags[locale];
  document.title=translate(locale,'模拟环境 · {kind}',params);
- if(select)select.value=preference;
  document.querySelectorAll<HTMLElement>('[data-i18n]').forEach(element=>{
   const key=element.dataset.i18n;if(key&&Object.hasOwn(messages,key))element.textContent=translate(locale,key as MessageKey,params);
  });
  const output=document.querySelector<HTMLOutputElement>('#status');if(output&&status)output.textContent=translate(locale,status);
 }
-select?.addEventListener('change',()=>{const value=select.value;if(value==='auto'||isLocale(value)){preference=value;savePreference(browserStorage(),value);render();}});
 addEventListener('languagechange',render);
-addEventListener('storage',(event)=>{if(event.key===LOCALE_KEY||event.key===null){preference=readPreference(browserStorage());render();}});
 render();
 
 const base=new URL(/* @vite-ignore */ './',import.meta.url);

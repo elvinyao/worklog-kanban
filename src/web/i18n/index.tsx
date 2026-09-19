@@ -1,5 +1,5 @@
 import {createContext,useContext,useEffect,useLayoutEffect,useMemo,useState,type ReactNode} from 'react';
-import {browserLanguages,browserStorage,columnName,isLocale,localeTags,LOCALE_KEY,readPreference,resolveLocale,savePreference,translate,type MessageKey,type Preference} from './core';
+import {browserLanguages,browserStorage,columnName,localeTags,LOCALE_KEY,readPreference,resolveLocale,savePreference,translate,type MessageKey,type Preference} from './core';
 
 function useLanguageState(){
  const [preference,setPreference]=useState<Preference>(()=>readPreference(browserStorage()));
@@ -26,9 +26,16 @@ export function LanguageProvider({children,page='board'}:{children:ReactNode;pag
  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 export function useLanguage(){const value=useContext(LanguageContext);if(!value)throw new Error('Language provider required');return value;}
-export function LanguageSelect(){
+export function LanguageSwitcher(){
  const {preference,setPreference,t}=useLanguage();
- return <label className="language-select"><span>语言 / Language / 言語</span><select aria-label="语言 / Language / 言語" value={preference} onChange={event=>{const value=event.target.value;if(value==='auto'||isLocale(value))setPreference(value);}}>
-  <option value="auto">{t('跟随浏览器')}</option><option value="zh">简体中文</option><option value="en">English</option><option value="ja">日本語</option>
- </select></label>;
+ const choices=[
+  {value:'auto',label:t('自动'),name:t('跟随浏览器')},
+  {value:'zh',label:'中文',name:'简体中文'},
+  {value:'en',label:'EN',name:'English'},
+  {value:'ja',label:'日本語',name:'日本語'},
+ ] as const;
+ return <div className="language-switcher" role="group" aria-label="语言 / Language / 言語">
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><ellipse cx="10" cy="10" rx="3" ry="7.2"/><path d="M3 10h14"/></svg>
+  {choices.map(({value,label,name})=><button key={value} type="button" data-language={value} aria-label={name} title={name} aria-pressed={preference===value} lang={value==='auto'?undefined:localeTags[value]} onClick={()=>setPreference(value)}>{label}</button>)}
+ </div>;
 }

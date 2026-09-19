@@ -1,5 +1,6 @@
 // UI text only. Shared card data and external content are never translation keys.
 export const messages = {
+  "自动": ["自动", "Auto", "自動"],
   "跟随浏览器": [
     "跟随浏览器",
     "Use browser language",

@@ -7,7 +7,7 @@ import type { PreviewReply, PreviewRequest } from '../contracts/preview-messages
 import { ExtensionClient } from './extension-client';
 import { TransportError } from './transport-error';
 import './probe.css';
-import {LanguageProvider,LanguageSelect,useLanguage} from './i18n';
+import {LanguageProvider,useLanguage} from './i18n';
 import type {MessageKey} from './i18n/core';
 const config = validateConfig(__SITE_CONFIG__);
 const errors = {login_required:'请到原站点重新登录，然后手动读取。',unavailable:'当前会话无法读取此资源。',network:'读取暂时失败，请稍后重试。',rate_limited:'原站点限制了读取频率，请等待后重试。',protocol:'原站点返回的内容无法识别，未作为预览显示。',disconnected:'扩展连接已断开，请重新连接。'} as const;
@@ -79,7 +79,7 @@ function Probe() {
   const preview=result?.ok && 'kind' in result.data ? result.data : null;
   const disabled=busy||status!=='已连接'||retryAt>Date.now();
   return <main>
-    <header><div><p className="brand">{t("WORKLOG / 接入验证")}</p><h1>{t("先确认，个人预览能正常读取。")}</h1><p className="muted">{t("共享工作记录留在看板。外部内容由当前浏览器的登录会话决定。")}</p></div><LanguageSelect/><span className="badge">{t("模拟环境")}</span></header>
+    <header><div><p className="brand">{t("WORKLOG / 接入验证")}</p><h1>{t("先确认，个人预览能正常读取。")}</h1><p className="muted">{t("共享工作记录留在看板。外部内容由当前浏览器的登录会话决定。")}</p></div><span className="badge">{t("模拟环境")}</span></header>
     <section className="connection"><div><span className={'dot '+(status==='已连接'?'online':'')}/><strong role="status">{t(status)}</strong><p className="muted">{t("每个浏览器 profile 独立登录；这里无需输入密码或 Token。")}</p></div><button className="secondary" disabled={status==='连接中'} onClick={()=>{invalidate();setEpoch(value=>value+1);}}>{t("重新连接")}</button></section>
     <div className="sources"><section className="source"><div className="source-title"><h2>Jira 9.7</h2><a href={config.jiraBaseUrl+'/__dummy/'} target="_blank" rel="noopener noreferrer">{t("模拟登录 ↗")}</a></div><label>{t("Jira 票据")}<input aria-label={t("Jira 票据")} value={key} onChange={e=>{invalidate();setKey(e.target.value);}}/></label><p className="hint">{t("DEMO-1 公开 · DEMO-2 Alice 专属 · DEMO-3 空态")}</p><button disabled={disabled} onClick={()=>void read('jira.preview')}>{t("读取 Jira")}</button></section>
     <section className="source"><div className="source-title"><h2>Mattermost</h2><a href={config.mattermostBaseUrl+'/__dummy/'} target="_blank" rel="noopener noreferrer">{t("模拟登录 ↗")}</a></div><label>{t("消息标识")}<input aria-label={t("消息标识")} value={post} onChange={e=>{invalidate();setPost(e.target.value);}}/></label><p className="hint">{t("26 个 a：公开消息 · 26 个 b：Alice 专属")}</p><button disabled={disabled} onClick={()=>void read('mattermost.preview')}>{t("读取 Mattermost")}</button></section></div>

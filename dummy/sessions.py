@@ -38,7 +38,7 @@ def error(status: int):
 def document_shell(kind: str, prefix: str, body: str):
     controls = f'{prefix}/__dummy'
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Worklog</title><link rel="stylesheet" href="{controls}/style.css"></head><body>
-<main data-kind="{html.escape(kind, quote=True)}"><label class="language">语言 / Language / 言語 <select id="language" aria-label="语言 / Language / 言語"><option value="auto" data-i18n="跟随浏览器">跟随浏览器</option><option value="zh">简体中文</option><option value="en">English</option><option value="ja">日本語</option></select></label>
+<main data-kind="{html.escape(kind, quote=True)}">
 <p class="badge" data-i18n="模拟环境 · {{kind}}">模拟环境 · {html.escape(kind)}</p>{body}
 </main><script src="{controls}/controls.js" type="module"></script></body></html>'''
 
@@ -126,7 +126,7 @@ def service(kind: str, prefix: str, default_origin: str):
 
     @app.get(controls + '/style.css')
     async def stylesheet():
-        return Response('body{font:16px system-ui;background:#f3f4f1;color:#26372b;margin:0}main{max-width:760px;margin:40px auto;padding:24px;background:white;border-radius:16px;overflow-wrap:anywhere}section{margin:24px 0}button,select{font:inherit;padding:10px;margin:4px;border:1px solid #b5c4b8;border-radius:8px;max-width:100%}button{cursor:pointer}.badge{color:#64775d}output{display:block}.language{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;font-size:13px;gap:6px}', media_type='text/css')
+        return Response('body{font:16px system-ui;background:#f3f4f1;color:#26372b;margin:0}main{max-width:760px;margin:40px auto;padding:24px;background:white;border-radius:16px;overflow-wrap:anywhere}section{margin:24px 0}button,select{font:inherit;padding:10px;margin:4px;border:1px solid #b5c4b8;border-radius:8px;max-width:100%}button{cursor:pointer}.badge{color:#64775d}output{display:block}', media_type='text/css')
 
     @app.get(controls + '/controls.js')
     async def control_script():

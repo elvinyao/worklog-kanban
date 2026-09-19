@@ -1,6 +1,6 @@
 import { readFile,readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { test,expect,board,jira,mm,login,inspect,profiles } from './fixtures';
+import { test,expect,board,jira,mm,login,inspect,profiles,chooseLanguage } from './fixtures';
 import { seedCard,sharedRead } from './shared-helpers';
 const marker='ALICE_ONLY_MARKER';
 test('private synthetic content stays out of Bob, shared responses, SQLite, events, logs and storage',async({alice,bob})=>{
@@ -26,8 +26,8 @@ test('private synthetic content stays out of Bob, shared responses, SQLite, even
  const persisted=Buffer.concat(files);expect(persisted.includes(Buffer.from(sharedCard.id))).toBe(true);expect(persisted.includes(Buffer.from('隔离测试的共享笔记'))).toBe(true);expect(persisted.includes(Buffer.from(marker))).toBe(false);
  const log=await readFile(process.env.WORKLOG_TEST_APP_LOG!,'utf8');expect(log).toContain('operation=card.create');expect(log).not.toContain(marker);
  // A manual preference may persist only its language code, even after viewing restricted content.
- await a.getByLabel('语言 / Language / 言語').selectOption('ja');
- await a.getByLabel('语言 / Language / 言語').selectOption('zh');
+ await chooseLanguage(a,'ja');
+ await chooseLanguage(a,'zh');
  for(const page of [a,b,control])expect(await page.evaluate(async()=>({local:Object.entries(localStorage),session:Object.keys(sessionStorage),databases:await indexedDB.databases(),caches:await caches.keys()}))).toEqual({local:page===a?[['worklog.language','zh']]:[],session:[],databases:[],caches:[]});
  expect(await worker.evaluate(async()=>({databases:await indexedDB.databases(),caches:await caches.keys(),storageAPI:typeof chrome.storage}))).toEqual({databases:[],caches:[],storageAPI:'undefined'});
  const modes=await worker.evaluate(()=>Reflect.get(globalThis,'__cacheModes') as string[]);expect(modes.length).toBeGreaterThan(0);expect(modes.every(mode=>mode==='no-store')).toBe(true);
