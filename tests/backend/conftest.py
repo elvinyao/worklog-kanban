@@ -10,12 +10,14 @@ import pytest
 
 
 @contextmanager
-def running_service(module: str, host: str):
+def running_service(module: str, host: str, env_factory=None):
     with socket.socket() as listener:
         listener.bind(('127.0.0.1', 0))
         port = listener.getsockname()[1]
     origin = f'http://{host}:{port}'
     env = {**os.environ, 'WORKLOG_DUMMY_ORIGIN': origin}
+    if env_factory is not None:
+        env.update(env_factory(origin))
     process = subprocess.Popen(
         [sys.executable, '-m', 'uvicorn', f'{module}:create_app', '--factory',
          '--host', '127.0.0.1', '--port', str(port), '--no-access-log',

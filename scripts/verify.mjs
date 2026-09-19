@@ -1,2 +1,7 @@
-console.error('Full application checks require the API contract from T08. Use the T01 tooling checks first.');
-process.exitCode = 1;
+import { execFileSync } from 'node:child_process';
+for(const [command,args] of [
+  ['npm',['run','typecheck']],
+  ['npm',['run','generate:api:check']],
+  ['python',['-m','compileall','-q','app','dummy','tools']],
+  ['python',['-m','tools.verify_boundaries']],
+])execFileSync(command,args,{stdio:'inherit'});
