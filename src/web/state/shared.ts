@@ -1,5 +1,5 @@
 import type { Snapshot } from '../api';
-export type SyncStatus='正在连接'|'连接中断，正在重连'|'已同步'|'读取失败，请重试';
+export type SyncStatus='sync.connecting'|'sync.reconnecting'|'sync.synced'|'sync.loadFailed';
 export interface Subscription { open:()=>void; revision:(value:number)=>void; error:()=>void }
 export class SharedBoard {
  private remove:(()=>void)|undefined;
@@ -13,7 +13,7 @@ export class SharedBoard {
  constructor(private subscribe:(listener:Subscription)=>()=>void,private fetcher:(signal:AbortSignal)=>Promise<Snapshot>,private changed:(snapshot:Snapshot)=>void,private status:(status:SyncStatus)=>void){}
  start(){
    if(this.remove||this.closed)return;
-   this.status('正在连接');
+   this.status('sync.connecting');
    this.remove=this.subscribe({
      open:()=>{this.initial=true;this.connected=true;},
      revision:value=>{
@@ -22,7 +22,7 @@ export class SharedBoard {
        if(this.initial){this.initial=false;this.refresh=true;}
        this.read();
      },
-     error:()=>{this.connected=false;if(!this.closed)this.status('连接中断，正在重连');},
+     error:()=>{this.connected=false;if(!this.closed)this.status('sync.reconnecting');},
    });
  }
  accept(snapshot:Snapshot){
@@ -38,8 +38,8 @@ export class SharedBoard {
    let succeeded=false;
    void this.fetcher(controller.signal).then(snapshot=>{
      if(this.closed)return;
-     this.accept(snapshot);succeeded=true;if(this.connected)this.status('已同步');
-   }).catch(()=>{if(!this.closed)this.status('读取失败，请重试');}).finally(()=>{
+     this.accept(snapshot);succeeded=true;if(this.connected)this.status('sync.synced');
+   }).catch(()=>{if(!this.closed)this.status('sync.loadFailed');}).finally(()=>{
      this.controller=undefined;
      if(succeeded||this.refresh||this.wanted>wantedAtStart)this.read();
    });

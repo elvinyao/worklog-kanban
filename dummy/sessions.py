@@ -39,7 +39,7 @@ def document_shell(kind: str, prefix: str, body: str):
     controls = f'{prefix}/__dummy'
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Worklog</title><link rel="stylesheet" href="{controls}/style.css"></head><body>
 <main data-kind="{html.escape(kind, quote=True)}">
-<p class="badge" data-i18n="模拟环境 · {{kind}}">模拟环境 · {html.escape(kind)}</p>{body}
+<p class="badge" data-i18n="dummy.environment">模拟环境 · {html.escape(kind)}</p>{body}
 </main><script src="{controls}/controls.js" type="module"></script></body></html>'''
 
 
@@ -115,14 +115,14 @@ def service(kind: str, prefix: str, default_origin: str):
     @app.get(controls + '/', response_class=HTMLResponse)
     async def control_page(request: Request):
         session = current(request)
-        who = html.escape(session.identity) if session else '<span data-i18n="未登录">未登录</span>'
-        fault_labels = ['正常响应','登录已过期','禁止访问','资源不存在','请求限流','返回登录页面','返回 HTML','无效 JSON','外站重定向','响应延迟','连接中断','头像读取失败','分页停滞','缺少用户信息','缺少频道信息']
-        faults = ''.join(f'<option value="{value}" data-i18n="{label}">{label}</option>' for value, label in zip(FaultInput.model_fields['fault'].annotation.__args__, fault_labels, strict=True))
+        who = html.escape(session.identity) if session else '<span data-i18n="dummy.signedOut">未登录</span>'
+        fault_labels = [('dummy.fault.none','正常响应'),('dummy.fault.unauthorized','登录已过期'),('dummy.fault.forbidden','禁止访问'),('dummy.fault.notFound','资源不存在'),('dummy.fault.rateLimited','请求限流'),('dummy.fault.loginHtml','返回登录页面'),('dummy.fault.html','返回 HTML'),('dummy.fault.malformed','无效 JSON'),('dummy.fault.redirect','外站重定向'),('dummy.fault.delay','响应延迟'),('dummy.fault.connection','连接中断'),('dummy.fault.avatarFailure','头像读取失败'),('dummy.fault.paginationStall','分页停滞'),('dummy.fault.missingUser','缺少用户信息'),('dummy.fault.missingChannel','缺少频道信息')]
+        faults = ''.join(f'<option value="{value}" data-i18n="{label_key}">{label}</option>' for value, (label_key, label) in zip(FaultInput.model_fields['fault'].annotation.__args__, fault_labels, strict=True))
         return document_shell(kind, prefix, f'''
-<h1 data-i18n="外部服务模拟控制台">外部服务模拟控制台</h1><p><span data-i18n="当前身份：">当前身份：</span><strong>{who}</strong></p>
-<p data-i18n="仅用于本地测试，不需要公司账号、密码或 Token。">仅用于本地测试，不需要公司账号、密码或 Token。</p><section><button data-identity="alice" data-i18n="以 Alice 登录">以 Alice 登录</button><button data-identity="bob" data-i18n="以 Bob 登录">以 Bob 登录</button><button data-identity="none" data-i18n="退出">退出</button></section>
-<section><label><span data-i18n="模拟响应">模拟响应</span> <select id="fault">{faults}</select></label><button id="apply-fault" data-i18n="应用">应用</button></section><output id="status"></output>
-<p data-i18n="Jira：DEMO-1（公开）、DEMO-2（Alice）、DEMO-3（空态）">Jira：DEMO-1（公开）、DEMO-2（Alice）、DEMO-3（空态）</p><p data-i18n="Mattermost：{{public}}（公开）、{{private}}（Alice）">Mattermost：{'a'*26}（公开）、{'b'*26}（Alice）</p>''')
+<h1 data-i18n="dummy.title">外部服务模拟控制台</h1><p><span data-i18n="dummy.currentIdentity">当前身份：</span><strong>{who}</strong></p>
+<p data-i18n="dummy.description">仅用于本地测试，不需要公司账号、密码或 Token。</p><section><button data-identity="alice" data-i18n="dummy.signInAlice">以 Alice 登录</button><button data-identity="bob" data-i18n="dummy.signInBob">以 Bob 登录</button><button data-identity="none" data-i18n="dummy.signOut">退出</button></section>
+<section><label><span data-i18n="dummy.response">模拟响应</span> <select id="fault">{faults}</select></label><button id="apply-fault" data-i18n="dummy.apply">应用</button></section><output id="status"></output>
+<p data-i18n="dummy.jiraExamples">Jira：DEMO-1（公开）、DEMO-2（Alice）、DEMO-3（空态）</p><p data-i18n="dummy.mattermostExamples">Mattermost：{'a'*26}（公开）、{'b'*26}（Alice）</p>''')
 
     @app.get(controls + '/style.css')
     async def stylesheet():

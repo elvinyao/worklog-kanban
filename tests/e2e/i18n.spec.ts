@@ -1,6 +1,6 @@
 import {test,expect,board,jira,mm,login,inspect,chooseLanguage} from './fixtures';
 import {seedCard,sharedRead} from './shared-helpers';
-import {columnName} from '../../src/web/i18n/core';
+import {columnName,messages,translate,type MessageKey} from '../../src/web/i18n/core';
 const language='语言 / Language / 言語';
 
 test('browser locale selects Japanese, English, Chinese variants and fallback',async({browser})=>{
@@ -88,10 +88,23 @@ test('secondary pages inherit language without additional language controls',asy
   await expect(page.getByRole('button',{name:'Jira を読み込む',exact:true})).toBeVisible();await expect(page.getByLabel(language)).toHaveCount(0);
   for(const site of [jira,mm]){
    await page.goto(site+'/__dummy/');await expect(page.getByLabel(language)).toHaveCount(0);await expect(page.locator('html')).toHaveAttribute('lang','en-US');
+   // Python-generated keys are outside TypeScript's checks; inspect every actual label and fault option.
+   const checkLabels=async(locale:'en'|'ja')=>{
+    const kind=await page.locator('main').getAttribute('data-kind');
+    const labels=await page.locator('[data-i18n]').evaluateAll(elements=>elements.map(element=>({key:element.getAttribute('data-i18n')!,text:element.textContent})));
+    expect(labels.length).toBeGreaterThan(0);
+    for(const {key,text} of labels){expect(Object.hasOwn(messages,key)).toBe(true);expect(text).toBe(translate(locale,key as MessageKey,{kind:kind??'',public:'a'.repeat(26),private:'b'.repeat(26)}));}
+   };
+   await checkLabels('en');await expect(page.locator('#fault option')).toHaveCount(15);
+   await page.getByRole('button',{name:'Apply',exact:true}).click();await expect(page.locator('#status')).toHaveText('Demo action failed');
+   await page.evaluate(()=>{Object.defineProperty(navigator,'languages',{get:()=>['ja-JP'],configurable:true});dispatchEvent(new Event('languagechange'));});
+   await expect(page.locator('html')).toHaveAttribute('lang','ja-JP');await checkLabels('ja');await expect(page.locator('#status')).toHaveText('デモ操作に失敗しました');
+   await page.evaluate(()=>{Object.defineProperty(navigator,'languages',{get:()=>['en-US'],configurable:true});dispatchEvent(new Event('languagechange'));});
    await page.getByRole('button',{name:'Sign in as Alice'}).click();await expect(page.locator('strong')).toHaveText('alice');
+   await checkLabels('en');
    await page.getByRole('button',{name:'Apply',exact:true}).click();await expect(page.locator('#status')).toHaveText('Simulated response applied');
    await page.goto(site+(site===jira?'/browse/DEMO-1':'/demo/pl/'+'a'.repeat(26)));
-   await expect(page.locator('.badge')).toContainText('Demo environment');await expect(page.getByLabel(language)).toHaveCount(0);
+   await expect(page.locator('.badge')).toContainText('Demo environment');await expect(page.getByLabel(language)).toHaveCount(0);await checkLabels('en');
   }
  }finally{await context.close();}
 });

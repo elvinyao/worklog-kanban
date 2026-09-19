@@ -26,10 +26,10 @@ describe('language preference',()=>{
  });
  it('covers every locale and substitutes user text literally',()=>{
   const placeholders=(value:string)=>[...value.matchAll(/\{(\w+)\}/g)].map(match=>match[1]).sort();
-  for(const values of Object.values(messages)){expect(values).toHaveLength(3);for(const value of values){expect(value.trim()).not.toBe('');expect(placeholders(value)).toEqual(placeholders(values[0]));}}
-  expect(translate('en','新建卡片')).toBe('New card');
-  expect(translate('ja','新建卡片')).toBe('カードを作成');
-  expect(translate('en','打开卡片：{title}',{title:'完成 <script>$&'})).toBe('Open card: 完成 <script>$&');
+  for(const [key,values] of Object.entries(messages)){expect(key).toMatch(/^[a-z][A-Za-z0-9]*(?:\.[a-z][A-Za-z0-9]*)+$/);expect(values).toHaveLength(3);for(const value of values){expect(value.trim()).not.toBe('');expect(placeholders(value)).toEqual(placeholders(values[0]));}}
+  expect(translate('en','card.new')).toBe('New card');
+  expect(translate('ja','card.new')).toBe('カードを作成');
+  expect(translate('en','card.open',{title:'完成 <script>$&'})).toBe('Open card: 完成 <script>$&');
  });
  it('translates only columns explicitly marked as defaults',()=>{
   expect(columnName('en',{name:'完成',defaultNameKey:'done'})).toBe('Done');

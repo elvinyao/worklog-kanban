@@ -48,23 +48,23 @@ export function Board({snapshot,open,create,accept,reload,focusRequest}:{snapsho
   const rect=event.currentTarget.getBoundingClientRect();const index=targetId?dropIndex(layout,id,targetId,event.clientY>rect.top+rect.height/2):layout.cards.filter(card=>card.columnId===columnId&&card.id!==id).length;
   hadFocus.current=true;focus({kind:'card',id});void move({id,columnId,index});
  }
- return <>{error&&<p role="alert" className="move-error error">{t(error)}</p>}<main ref={board} className="board" aria-label={t("工作看板")} data-revision={snapshot.revision} aria-busy={!!pending} onCompositionStart={()=>{composing.current=true;}} onCompositionEnd={()=>{composing.current=false;}} onKeyDown={keydown} onFocus={event=>{
+ return <>{error&&<p role="alert" className="move-error error">{t(error)}</p>}<main ref={board} className="board" aria-label={t("board.ariaLabel")} data-revision={snapshot.revision} aria-busy={!!pending} onCompositionStart={()=>{composing.current=true;}} onCompositionEnd={()=>{composing.current=false;}} onKeyDown={keydown} onFocus={event=>{
   const target=event.target as HTMLElement;const cardId=target.closest<HTMLElement>('[data-card-id]')?.dataset.cardId;if(cardId)remember({kind:'card',id:cardId});else if(target.dataset.navColumn)remember({kind:'column',id:target.dataset.navColumn,index:selectedRef.current?.kind==='column'?selectedRef.current.index:0});
  }}>
   {layout.columns.map(column=><section ref={node=>{if(node)columns.current.set(column.id,node);else columns.current.delete(column.id);}} tabIndex={0} data-nav-column={column.id} data-column-id={column.id} className="column" role="region" aria-label={columnLabel(column)} key={column.id} onDragOver={event=>{if(dragging.current&&!busy.current){event.preventDefault();event.dataTransfer.dropEffect='move';}}} onDrop={event=>drop(event,column.id)}>
-   <header className="column-heading"><h2>{columnLabel(column)}</h2><span className="count">{layout.cards.filter(card=>card.columnId===column.id).length}</span><button className="icon" aria-label={t('在{column}新建卡片',{column:columnLabel(column)})} onClick={()=>create(column.id)}>＋</button></header>
+   <header className="column-heading"><h2>{columnLabel(column)}</h2><span className="count">{layout.cards.filter(card=>card.columnId===column.id).length}</span><button className="icon" aria-label={t('card.newInColumn',{column:columnLabel(column)})} onClick={()=>create(column.id)}>＋</button></header>
    <div className="cards">{layout.cards.filter(card=>card.columnId===column.id).map(card=><article className={'card'+(selected?.kind==='card'&&selected.id===card.id?' selected':'')} key={card.id} data-card-id={card.id} draggable={!pending} onDragStart={event=>{
     if(busy.current||(event.target as HTMLElement).closest('a,input,textarea,select')){event.preventDefault();return;}dragSource.current=event.currentTarget;dragging.current=card.id;dragged.current=true;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',card.id);focus({kind:'card',id:card.id});
    }} onDragEnd={()=>{dragSource.current=null;dragging.current=null;setTimeout(()=>{dragged.current=false;},0);}} onDragOver={event=>{if(dragging.current&&!busy.current){event.preventDefault();event.stopPropagation();event.dataTransfer.dropEffect='move';}}} onDrop={event=>drop(event,card.columnId,card.id)}>
-    <button ref={node=>{if(node)cards.current.set(card.id,node);else cards.current.delete(card.id);}} data-nav-card={card.id} className="card-open" aria-label={t('打开卡片：{title}',{title:card.title})} onClick={()=>{if(!busy.current&&!dragged.current)open(card);}}>
+    <button ref={node=>{if(node)cards.current.set(card.id,node);else cards.current.delete(card.id);}} data-nav-card={card.id} className="card-open" aria-label={t('card.open',{title:card.title})} onClick={()=>{if(!busy.current&&!dragged.current)open(card);}}>
      <span className="card-title">{card.title}</span>
      {card.notes&&<span className="card-notes">{card.notes}</span>}
-     <span className="card-tags">{card.jira&&<span className="tag">{card.jira.key}</span>}{card.mattermostLinks.length>0&&<span className="tag neutral">{t(card.mattermostLinks.length===1?'1 条消息':'{count} 条消息',{count:card.mattermostLinks.length})}</span>}</span>
+     <span className="card-tags">{card.jira&&<span className="tag">{card.jira.key}</span>}{card.mattermostLinks.length>0&&<span className="tag neutral">{t(card.mattermostLinks.length===1?'card.oneMessage':'card.messageCount',{count:card.mattermostLinks.length})}</span>}</span>
     </button>
     {card.jira&&<Preview key={card.jira.url} resource={{kind:'jira',id:card.jira.key,url:card.jira.url}} compact/>}
    </article>)}</div>
-   {!layout.cards.some(card=>card.columnId===column.id)&&<p className="empty">{t("从一张工作卡片开始")}</p>}
-   <button className="add-card" onClick={()=>create(column.id)}>＋ {t('添加卡片')}</button>
+   {!layout.cards.some(card=>card.columnId===column.id)&&<p className="empty">{t("board.emptyColumn")}</p>}
+   <button className="add-card" onClick={()=>create(column.id)}>＋ {t('card.add')}</button>
   </section>)}
  </main></>;
 }

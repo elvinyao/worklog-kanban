@@ -22,14 +22,14 @@ function useLanguageState(){
 const LanguageContext=createContext<ReturnType<typeof useLanguageState>|null>(null);
 export function LanguageProvider({children,page='board'}:{children:ReactNode;page?:'board'|'probe'}){
  const value=useLanguageState();
- useLayoutEffect(()=>{document.documentElement.lang=localeTags[value.locale];document.title='Worklog · '+value.t(page==='board'?'共享工作看板':'模拟接入验证');},[value.locale,page]);
+ useLayoutEffect(()=>{document.documentElement.lang=localeTags[value.locale];document.title='Worklog · '+value.t(page==='board'?'board.title':'probe.pageTitle');},[value.locale,page]);
  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 export function useLanguage(){const value=useContext(LanguageContext);if(!value)throw new Error('Language provider required');return value;}
 export function LanguageSwitcher(){
  const {preference,setPreference,t}=useLanguage();
  const choices=[
-  {value:'auto',label:t('自动'),name:t('跟随浏览器')},
+  {value:'auto',label:t('language.auto'),name:t('language.followBrowser')},
   {value:'zh',label:'中文',name:'简体中文'},
   {value:'en',label:'EN',name:'English'},
   {value:'ja',label:'日本語',name:'日本語'},

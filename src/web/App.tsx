@@ -11,7 +11,7 @@ import { PreviewProvider,PreviewToolbar } from './components/PreviewProvider';
 type Selection={kind:'card';id:string}|{kind:'new';columnId:string}|{kind:'columns'}|null;
 export function App(){
  const {t}=useLanguage();
- const [snapshot,setSnapshot]=useState<Snapshot>();const [status,setStatus]=useState<SyncStatus>('正在连接');const [selection,setSelection]=useState<Selection>(null);
+ const [snapshot,setSnapshot]=useState<Snapshot>();const [status,setStatus]=useState<SyncStatus>('sync.connecting');const [selection,setSelection]=useState<Selection>(null);
  const selectionRef=useRef(selection);selectionRef.current=selection;const [focusRequest,setFocusRequest]=useState<FocusRequest|null>(null);
  const shared=useRef<SharedBoard|null>(null);
  useEffect(()=>{
@@ -28,11 +28,11 @@ export function App(){
   if(selection?.kind==='card'||selection?.kind==='new')setFocusRequest(previous=>({target:selection.kind==='card'?{kind:'card',id:selection.id}:{kind:'column',id:selection.columnId,index:0},sequence:(previous?.sequence??0)+1}));
   setSelection(null);
  };
- return <PreviewProvider resources={resources}><header className="app-header"><div className="brand"><span className="brand-mark">w.</span><div><h1>Worklog</h1><p>{t("让工作进展有迹可循")}</p></div></div><div className="header-meta"><LanguageSwitcher/>{__SITE_CONFIG__.mode==='dummy'&&<span className="demo-badge">{t("模拟环境")}</span>}<span role="status" className="sync-status">● {t(status)}</span><button onClick={reload}>{t("重新同步")}</button></div></header>
-  <div className="board-toolbar"><div><span className="eyebrow">{t('团队空间')}</span><h2>{t('共享工作看板')} <span>{t(snapshot?.cards.length===1?'1 项工作':'{count} 项工作',{count:snapshot?.cards.length??0})}</span></h2></div><div className="row-actions"><button disabled={!snapshot} onClick={()=>setSelection({kind:'columns'})}>{t("管理列")}</button><button className="primary" aria-label={t("新建卡片")} disabled={!snapshot?.columns.length} onClick={()=>{const column=snapshot?.columns[0];if(column)setSelection({kind:'new',columnId:column.id});}}>＋ {t('新建卡片')}</button></div></div>
+ return <PreviewProvider resources={resources}><header className="app-header"><div className="brand"><span className="brand-mark">w.</span><div><h1>Worklog</h1><p>{t("app.tagline")}</p></div></div><div className="header-meta"><LanguageSwitcher/>{__SITE_CONFIG__.mode==='dummy'&&<span className="demo-badge">{t("environment.demo")}</span>}<span role="status" className="sync-status">● {t(status)}</span><button onClick={reload}>{t("sync.refresh")}</button></div></header>
+  <div className="board-toolbar"><div><span className="eyebrow">{t('board.eyebrow')}</span><h2>{t('board.title')} <span>{t(snapshot?.cards.length===1?'board.oneWorkItem':'board.workCount',{count:snapshot?.cards.length??0})}</span></h2></div><div className="row-actions"><button disabled={!snapshot} onClick={()=>setSelection({kind:'columns'})}>{t("columns.manage")}</button><button className="primary" aria-label={t("card.new")} disabled={!snapshot?.columns.length} onClick={()=>{const column=snapshot?.columns[0];if(column)setSelection({kind:'new',columnId:column.id});}}>＋ {t('card.new')}</button></div></div>
   <PreviewToolbar/>
-  {snapshot?<Board snapshot={snapshot} open={item=>setSelection({kind:'card',id:item.id})} create={columnId=>setSelection({kind:'new',columnId})} accept={accept} reload={reload} focusRequest={focusRequest}/>:<p className="loading">{t("正在读取共享看板…")}</p>}
-  <footer className="app-footer"><span>{t("共享笔记 · 即时同步")}</span><span>{t("Jira 与消息原文保留在各自系统")}</span></footer>
+  {snapshot?<Board snapshot={snapshot} open={item=>setSelection({kind:'card',id:item.id})} create={columnId=>setSelection({kind:'new',columnId})} accept={accept} reload={reload} focusRequest={focusRequest}/>:<p className="loading">{t("board.loading")}</p>}
+  <footer className="app-footer"><span>{t("app.sharedNotesFooter")}</span><span>{t("app.sourceContentFooter")}</span></footer>
   {snapshot&&selection?.kind==='columns'&&<ColumnDialog snapshot={snapshot} accept={accept} reload={reload} close={close}/>}
   {snapshot&&(selection?.kind==='new'||(selection?.kind==='card'&&card))&&<CardDialog key={selection.kind==='card'?selection.id:'new'} card={card} columnId={selection.kind==='new'?selection.columnId:card!.columnId} snapshot={snapshot} accept={accept} reload={reload} close={close}/>}
  </PreviewProvider>;

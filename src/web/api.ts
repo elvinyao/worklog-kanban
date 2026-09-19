@@ -10,12 +10,12 @@ export class ApiError extends Error {
 }
 export const errorText=(error:unknown):MessageKey=>{
   if(error instanceof ApiError){
-    if(error.status===409)return '共享内容已更新，请比较后重试。';
-    if(error.status===404)return '内容已不存在，请刷新看板。';
-    if(error.status===400||error.status===422)return '请检查标题、链接或目标位置。';
-    if(error.status===403)return '请求来源不被允许，请从配置的看板地址打开。';
+    if(error.status===409)return 'error.sharedConflict';
+    if(error.status===404)return 'error.notFound';
+    if(error.status===400||error.status===422)return 'error.invalidInput';
+    if(error.status===403)return 'error.sourceNotAllowed';
   }
-  return '暂时无法保存或读取，请稍后重试。';
+  return 'error.requestFailed';
 };
 async function request(path:string,method='GET',body?:unknown,signal?:AbortSignal):Promise<Snapshot>{
   const response=await fetch('/api'+path,{method,cache:'no-store',credentials:'same-origin',
