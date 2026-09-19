@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-**用户已批准完整实施计划，沿用 main；T01、T02 已提交，T03 契约测试与类型检查通过，下一项为 T04 真实扩展链路。**
+**用户已批准完整实施计划，沿用 main；T01–T03 已提交，T04 真实扩展基础链路验收通过，继续 T05 完整适配器。**
 
 用户已要求使用 dummy 环境，并确认目标 Jira 为 DC / Server 9.7。Mattermost 仅按 API v4 所需子集模拟，实际服务器版本未知。本次交付目标为完整 dummy 版本；公司实测单列。用户在修订计划后明确回复“OK，开始”，据此执行 T01–T14，不重复确认已批准的技术栈或 main。
 
@@ -29,7 +29,7 @@
 | T01 双运行时与项目入口 | 完成 | [首轮失败](task01_toolchain/attempt-001/実行結果.md)、[复验](task01_toolchain/attempt-002/実行結果.md) |
 | T02 Jira / Mattermost dummy | 实现与服务测试完成 | [初始 RED](task02_dummy/attempt-001/実行結果.md)、[审阅回归](task02_dummy/attempt-002/実行結果.md)、[20 项通过](task02_dummy/attempt-003/実行結果.md) |
 | T03 站点、链接和数据契约 | 完成 | [RED](task03_contracts/attempt-001/実行結果.md)、[审阅回归](task03_contracts/attempt-002/実行結果.md)、[复验](task03_contracts/attempt-003/実行結果.md) |
-| T04 扩展桥接与会话读取 | 未开始 | 无 |
+| T04 扩展桥接与会话读取 | 完成 | [初验](task04_bridge/attempt-001/実行結果.md)、[竞态 RED](task04_bridge/attempt-002/実行結果.md)、[复验](task04_bridge/attempt-003/実行結果.md) |
 | T05 两套适配器 | 未开始 | 无 |
 | T06 模拟接入验证页 | 未开始 | 无 |
 | T07 共享数据与事务 | 未开始 | 无 |
@@ -43,10 +43,10 @@
 
 ## 下一步与阻碍
 
-- 继续 T04 真实扩展、最小接入页与浏览器域名/Cookie 隔离验证；T05 完善适配器，T06 完成 probe 验收。
+- 继续 T05 完整 Jira/MM 适配器；随后 T06 完成接入页及生命周期验收。
 - Docker 接口需要沙箱外权限，已通过项目 runner 获准访问 OrbStack；不在主机执行项目代码。
 - 公司环境尚无：仅影响未来真实 SSO、权限和部署网络验收，不阻塞本计划中的 dummy 功能。
-- 三个本地域名和浏览器扩展安装仍待 T02/T04 验证；失败记录具体阻碍。
+- 三个本地域名和扩展在容器 Chromium 中已验证；主机 Chrome/Edge 的手动安装操作仍待 T12。
 
 ## 执行记录约定
 

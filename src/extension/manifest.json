@@ -1,0 +1,10 @@
+{
+ "manifest_version":3,
+ "name":"Worklog Kanban Personal Preview",
+ "version":"0.1.0",
+ "description":"Read personal Jira and Mattermost previews using this browser session.",
+ "background":{"service_worker":"worker.js","type":"module"},
+ "content_scripts":[{"matches":[],"js":["bridge.js"],"run_at":"document_start","all_frames":false}],
+ "host_permissions":[],
+ "content_security_policy":{"extension_pages":"script-src 'self'; object-src 'none'"}
+}
