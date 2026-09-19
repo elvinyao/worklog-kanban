@@ -1,0 +1,152 @@
+{
+  "config": {
+    "mode": "dummy",
+    "boardOrigin": "http://board.localhost:4173",
+    "jiraBaseUrl": "http://jira.localhost:4180/jira",
+    "mattermostBaseUrl": "http://mattermost.localhost:4181"
+  },
+  "cases": [
+    {
+      "kind": "jira",
+      "input": "DEMO-1",
+      "expected": {
+        "kind": "jira",
+        "id": "DEMO-1",
+        "url": "http://jira.localhost:4180/jira/browse/DEMO-1"
+      }
+    },
+    {
+      "kind": "jira",
+      "input": "demo-12",
+      "expected": {
+        "kind": "jira",
+        "id": "DEMO-12",
+        "url": "http://jira.localhost:4180/jira/browse/DEMO-12"
+      }
+    },
+    {
+      "kind": "jira",
+      "input": "http://jira.localhost:4180/jira/browse/DEMO-1",
+      "expected": {
+        "kind": "jira",
+        "id": "DEMO-1",
+        "url": "http://jira.localhost:4180/jira/browse/DEMO-1"
+      }
+    },
+    {
+      "kind": "mattermost",
+      "input": "http://mattermost.localhost:4181/demo/pl/aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected": {
+        "kind": "mattermost",
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "team": "demo",
+        "url": "http://mattermost.localhost:4181/demo/pl/aaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "kind": "jira",
+      "input": "http://jira.localhost:4180/browse/DEMO-1",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "http://jira.localhost:9999/jira/browse/DEMO-1",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "http://jira.localhost.evil:4180/jira/browse/DEMO-1",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "http://alice:secret@jira.localhost:4180/jira/browse/DEMO-1",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "http://jira.localhost:4180/jira/../jira/browse/DEMO-1",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "http://jira.localhost:4180/jira/%2e%2e/jira/browse/DEMO-1",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "http://jira.localhost:4180/jira/browse/DEMO-1?token=secret",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "http://jira.localhost:4180/jira/browse/DEMO-1#comment-1",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "http://jira.localhost:4180/jira//browse/DEMO-1",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "DEMO-0",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "DEMO--1",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "javascript:alert(1)",
+      "expected": null
+    },
+    {
+      "kind": "mattermost",
+      "input": "http://mattermost.localhost:4181/demo/pl/aaaaaaaaaaaaaaaaaaaaaaaaaa?user=alice",
+      "expected": null
+    },
+    {
+      "kind": "mattermost",
+      "input": "http://mattermost.localhost:4181/demo/pl/ABC",
+      "expected": null
+    },
+    {
+      "kind": "mattermost",
+      "input": "http://mattermost.localhost:4181/demo%2fpl/aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected": null
+    },
+    {
+      "kind": "mattermost",
+      "input": "http://mattermost.localhost:4181/demo/../demo/pl/aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected": null
+    },
+    {
+      "kind": "mattermost",
+      "input": "http://mattermost.localhost:4181/demo/pl/aaaaaaaaaaaaaaaaaaaaaaaaaa/extra",
+      "expected": null
+    },
+    {
+      "kind": "mattermost",
+      "input": "http://mattermost.localhost.evil:4181/demo/pl/aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected": null
+    },
+    {
+      "kind": "mattermost",
+      "input": "http://mattermost.localhost:4181/demo\\pl/aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected": null
+    },
+    {
+      "kind": "jira",
+      "input": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-1",
+      "expected": null
+    },
+    {
+      "kind": "mattermost",
+      "input": "http://mattermost.localhost:4181/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/pl/aaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected": null
+    }
+  ]
+}

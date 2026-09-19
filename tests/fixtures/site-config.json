@@ -1,0 +1,141 @@
+{
+  "cases": [
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://JIRA.EXAMPLE:443/team/jira/",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": {
+        "mode": "production",
+        "boardOrigin": "https://board.example",
+        "jiraBaseUrl": "https://jira.example/team/jira",
+        "mattermostBaseUrl": "https://chat.example/chat"
+      }
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://jira.example",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": {
+        "mode": "production",
+        "boardOrigin": "https://board.example",
+        "jiraBaseUrl": "https://jira.example",
+        "mattermostBaseUrl": "https://chat.example/chat"
+      }
+    },
+    {
+      "input": {
+        "mode": "other",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://JIRA.EXAMPLE:443/team/jira/",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": 23,
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://JIRA.EXAMPLE:443/team/jira/",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/",
+        "privateCookie": "synthetic"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "http://localhost:0",
+        "jiraBaseUrl": "https://JIRA.EXAMPLE:443/team/jira/",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "http://127.1",
+        "jiraBaseUrl": "https://JIRA.EXAMPLE:443/team/jira/",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://jira.example/\tpath",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://jira.example/%2Fsecret",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://jira.example/%255csecret",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://%6aira.example",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://jira.example\\evil",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "HTTPS://BOARD.EXAMPLE:443/",
+        "jiraBaseUrl": "https://jira.example/a\r\nb",
+        "mattermostBaseUrl": "https://CHAT.EXAMPLE:443/chat/"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "mode": "production",
+        "boardOrigin": "http://0x7f000001",
+        "jiraBaseUrl": "https://jira.example",
+        "mattermostBaseUrl": "https://chat.example"
+      },
+      "expected": null
+    }
+  ]
+}
