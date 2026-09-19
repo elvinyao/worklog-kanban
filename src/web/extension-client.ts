@@ -18,11 +18,11 @@ export class ExtensionClient {
       if (pending) { clearTimeout(pending.timer); this.pending.delete(reply.id); pending.resolve(reply); }
     } catch { /* Ignore invalid replies. */ }
   };
-  request(request:PreviewRequest):Promise<PreviewReply> {
+  request(request:PreviewRequest,timeoutMs=30000):Promise<PreviewReply> {
     if (this.disposed || this.pending.has(request.id)) return Promise.reject(new Error('disconnected'));
     parseRequest(request);
     return new Promise((resolve,reject) => {
-      const timer = setTimeout(() => { this.pending.delete(request.id); this.cancel(request.id); reject(new Error('disconnected')); },30000);
+      const timer = setTimeout(() => { this.pending.delete(request.id); this.cancel(request.id); reject(new Error('disconnected')); },timeoutMs);
       this.pending.set(request.id,{resolve,reject,timer});
       window.postMessage({channel:'worklog:request',payload:request},this.config.boardOrigin);
     });

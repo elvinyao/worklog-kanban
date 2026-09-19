@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-**用户已批准完整实施计划，沿用 main；T01–T04 已提交，T05 完整适配器与真实浏览器链路通过，继续 T06 接入页验收。**
+**用户已批准完整实施计划，沿用 main；T01–T05 已提交，T06 模拟接入阶段通过，继续 T07 共享数据库与事务。**
 
 用户已要求使用 dummy 环境，并确认目标 Jira 为 DC / Server 9.7。Mattermost 仅按 API v4 所需子集模拟，实际服务器版本未知。本次交付目标为完整 dummy 版本；公司实测单列。用户在修订计划后明确回复“OK，开始”，据此执行 T01–T14，不重复确认已批准的技术栈或 main。
 
@@ -31,7 +31,7 @@
 | T03 站点、链接和数据契约 | 完成 | [RED](task03_contracts/attempt-001/実行結果.md)、[审阅回归](task03_contracts/attempt-002/実行結果.md)、[复验](task03_contracts/attempt-003/実行結果.md) |
 | T04 扩展桥接与会话读取 | 完成 | [初验](task04_bridge/attempt-001/実行結果.md)、[竞态 RED](task04_bridge/attempt-002/実行結果.md)、[复验](task04_bridge/attempt-003/実行結果.md) |
 | T05 两套适配器 | 完成 | [RED](task05_adapters/attempt-001/実行結果.md)、[复验](task05_adapters/attempt-002/実行結果.md) |
-| T06 模拟接入验证页 | 未开始 | 无 |
+| T06 模拟接入验证页 | 完成 | [RED](task06_probe/attempt-001/実行結果.md)、[初验/修正](task06_probe/attempt-002/実行結果.md)、[普通与 StrictMode 通过](task06_probe/attempt-003/実行結果.md)、[视觉核对](manual/run-001/実行結果.md) |
 | T07 共享数据与事务 | 未开始 | 无 |
 | T08 FastAPI、SSE 与生成契约 | 未开始 | 无 |
 | T09 React 看板和共享笔记 | 未开始 | 无 |
@@ -43,7 +43,7 @@
 
 ## 下一步与阻碍
 
-- 继续 T06 接入页状态、重连与真实 React StrictMode 生命周期验收，然后进入共享看板。
+- 继续 T07 共享数据库与事务，随后 T08 API/SSE、T09 React 看板；模拟接入阶段已完成。
 - Docker 接口需要沙箱外权限，已通过项目 runner 获准访问 OrbStack；不在主机执行项目代码。
 - 公司环境尚无：仅影响未来真实 SSO、权限和部署网络验收，不阻塞本计划中的 dummy 功能。
 - 三个本地域名和扩展在容器 Chromium 中已验证；主机 Chrome/Edge 的手动安装操作仍待 T12。

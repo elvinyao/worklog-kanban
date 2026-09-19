@@ -5,6 +5,7 @@ import { test, expect, board, jira, mm, login, fault, inspect } from './fixtures
 async function read(page:Page,kind:'Jira'|'Mattermost'):Promise<PreviewReply> {
   const button=page.getByRole('button',{name:'读取 '+kind,exact:true});
   await button.click();await expect(button).toBeEnabled();
+  if(await page.locator('details').getAttribute('open')===null)await page.getByText('查看本次合成响应',{exact:true}).click();
   return JSON.parse(await page.getByTestId('result').innerText()) as PreviewReply;
 }
 test('actual extension reads all visible Jira 9.7 comment pages for each identity',async({alice,bob})=>{
