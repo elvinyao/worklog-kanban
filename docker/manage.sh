@@ -6,7 +6,8 @@ PROJECT="${WORKLOG_PROJECT:-worklog-kanban}"
 usage() {
   echo 'Usage: bash docker.sh [--project NAME] ACTION'
   echo 'start | update [--local] [--config config/company.local.json] [--port PORT] [--trusted-proxy CIDR]'
-  echo 'stop | remove [--purge-data --yes] | status | logs | config'
+  echo 'stop | remove [--purge-data --yes] | status | logs | config | backup | backups'
+  echo 'restore BACKUP_ID --yes: replace shared data; retain a copy of the pre-restore data'
   echo 'Without --config, first start uses dummy. Later commands reuse the successful deployment.'
   echo 'stop/remove retain shared data; --purge-data --yes permanently deletes it.'
 }
@@ -28,7 +29,8 @@ case "$ACTION" in
         *) bad_args ;;
       esac
     done ;;
-  stop|status|logs|config) [ "$#" -eq 0 ] || bad_args ;;
+  stop|status|logs|config|backup|backups) [ "$#" -eq 0 ] || bad_args ;;
+  restore) [ "$#" -eq 2 ] && [ "$2" = --yes ] || bad_args; BACKUP_ID="$1"; [[ "$BACKUP_ID" =~ ^[0-9]{8}T[0-9]{6}Z-[a-f0-9]{8}$ ]] || bad_args ;;
   remove) if [ "$#" -eq 2 ] && [ "$1" = --purge-data ] && [ "$2" = --yes ]; then PURGE=true; elif [ "$#" -ne 0 ]; then bad_args; fi ;;
   exec) [ "$#" -ge 2 ] || bad_args; case "$1" in board|jira|mattermost) ;; *) bad_args ;; esac ;;
   *) bad_args ;;
@@ -69,6 +71,11 @@ build_ops() {
 settings() {
   docker run --rm -i --init --network none --read-only --tmpfs /tmp --user 0:0 -v "$ROOT:/workspace" -w /workspace --entrypoint python "$OPS" \
     /opt/worklog/docker/as_owner.py python /opt/worklog/docker/deployment.py "$@" --project "$PROJECT"
+}
+maintenance() {
+  docker run --rm -i --init --network none --read-only --tmpfs /tmp --user 0:0 \
+    -v "$ROOT:/workspace" -v "${PROJECT}_board-data:/data" -w /workspace --entrypoint python "$OPS" \
+    /opt/worklog/docker/backup.py "$@" --project "$PROJECT"
 }
 export_extension() {
   docker run --rm -i --init --network none --read-only --tmpfs /tmp --user 0:0 -v "$ROOT:/workspace" -w /workspace --entrypoint python "$IMAGE" \
@@ -120,6 +127,35 @@ case "$ACTION" in
     fi
     deploy true ;;
   stop) compose stop; echo 'Stopped; shared data is retained.' ;;
+  backup|backups|restore)
+    [ -f "$SNAPSHOT" ] || { echo 'No saved deployment for this project. Start it first.' >&2; exit 1; }
+    if [ "$ACTION" != backups ]; then docker volume inspect "${PROJECT}_board-data" >/dev/null || { echo 'No data volume; nothing was created or restored.' >&2; exit 1; }; fi
+    build_ops
+    if [ "$ACTION" = backups ]; then
+      docker run --rm -i --init --network none --read-only --tmpfs /tmp -v "$ROOT:/workspace:ro" --entrypoint python "$OPS" /opt/worklog/docker/backup.py backups --project "$PROJECT"
+    else
+      container="$(compose ps -a -q board)"; runtime_image=""; was_running=false
+      if [ -n "$container" ]; then runtime_image="$(docker inspect --format '{{.Image}}' "$container")"; was_running="$(docker inspect --format '{{.State.Running}}' "$container")"; fi
+      if [ "$ACTION" = backup ]; then
+        identifier="$(maintenance backup --image "$runtime_image")"
+        echo "Backup saved: $ROOT/backups/$PROJECT/$identifier"
+      else
+        stage="$(maintenance stage --id "$BACKUP_ID")"
+        if [ "$was_running" = true ]; then compose stop board; fi
+        if ! maintenance apply --id "$stage" --image "$runtime_image"; then
+          echo 'Restore failed. Retained data and backups were not purged. Run doctor before retrying.' >&2
+          if [ "$was_running" = true ]; then compose up -d --no-build --pull never --wait --wait-timeout 60 board || true; fi
+          exit 1
+        fi
+        if [ "$was_running" = true ]; then
+          if ! compose up -d --no-build --pull never --wait --wait-timeout 60 board; then
+            compose stop board || true
+            echo 'Restored database could not start. The pre-restore backup is retained; inspect doctor and backups.' >&2; exit 1
+          fi
+        fi
+        echo 'Restored. Previous running/stopped state retained. Reload all open board tabs.'
+      fi
+    fi ;;
   remove)
     if [ "$PURGE" = true ]; then compose down --volumes; echo "Removed services and permanently deleted ${PROJECT}_board-data. External backups remain.";
     else compose down; echo "Removed services; ${PROJECT}_board-data is retained."; fi ;;

@@ -65,7 +65,7 @@ def test_docker_entry_rejects_destructive_or_unknown_arguments_without_calling_d
     fake=tmp_path/'docker';record=tmp_path/'calls'
     fake.write_text('#!/bin/sh\nprintf called >> "$DOCKER_CALL_RECORD"\nexit 99\n');fake.chmod(0o755)
     env={**os.environ,'PATH':str(tmp_path)+os.pathsep+os.environ['PATH'],'DOCKER_CALL_RECORD':str(record)}
-    for args in [('remove','--purge-data'),('remove','--yes'),('remove','--typo'),('start','--purge-data'),('update','--typo'),('--project','../bad','remove'),('--project','missing-action')]:
+    for args in [('remove','--purge-data'),('remove','--yes'),('remove','--typo'),('start','--purge-data'),('update','--typo'),('--project','../bad','remove'),('--project','missing-action'),('restore','20260920T000000Z-12345678'),('restore','../escape','--yes'),('backup','--typo')]:
         result=subprocess.run(['bash',str(ROOT/'docker.sh'),*args],env=env,text=True,capture_output=True)
         assert result.returncode==64
     assert not record.exists()

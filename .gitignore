@@ -7,6 +7,7 @@ __pycache__/
 .vite/
 dist/
 data/
+backups/
 *.db
 *.db-shm
 *.db-wal
