@@ -6,7 +6,7 @@ PROJECT="${WORKLOG_PROJECT:-worklog-kanban}"
 usage() {
   echo 'Usage: bash docker.sh [--project NAME] ACTION'
   echo 'start | update [--local] [--config config/company.local.json] [--port PORT] [--trusted-proxy CIDR]'
-  echo 'stop | remove [--purge-data --yes] | status | logs | config | backup | backups'
+  echo 'stop | remove [--purge-data --yes] | status | logs | config | doctor | backup | backups'
   echo 'restore BACKUP_ID --yes: replace shared data; retain a copy of the pre-restore data'
   echo 'Without --config, first start uses dummy. Later commands reuse the successful deployment.'
   echo 'stop/remove retain shared data; --purge-data --yes permanently deletes it.'
@@ -29,7 +29,7 @@ case "$ACTION" in
         *) bad_args ;;
       esac
     done ;;
-  stop|status|logs|config|backup|backups) [ "$#" -eq 0 ] || bad_args ;;
+  stop|status|logs|config|doctor|backup|backups) [ "$#" -eq 0 ] || bad_args ;;
   restore) [ "$#" -eq 2 ] && [ "$2" = --yes ] || bad_args; BACKUP_ID="$1"; [[ "$BACKUP_ID" =~ ^[0-9]{8}T[0-9]{6}Z-[a-f0-9]{8}$ ]] || bad_args ;;
   remove) if [ "$#" -eq 2 ] && [ "$1" = --purge-data ] && [ "$2" = --yes ]; then PURGE=true; elif [ "$#" -ne 0 ]; then bad_args; fi ;;
   exec) [ "$#" -ge 2 ] || bad_args; case "$1" in board|jira|mattermost) ;; *) bad_args ;; esac ;;
@@ -56,6 +56,26 @@ if [ "$ACTION" = status ]; then compose ps -a; echo "Data volume: ${PROJECT}_boa
 if [ "$ACTION" = logs ]; then compose logs --tail=100 --follow; exit; fi
 if [ "$ACTION" = config ]; then compose config; exit; fi
 if [ "$ACTION" = exec ]; then compose exec -T "$@"; exit; fi
+if [ "$ACTION" = doctor ]; then
+  echo '[OK] Docker and Compose are available.'
+  compose ps -a
+  container="$(compose ps -a -q board)"; running=false; runtime_image=""; sites=null
+  container_state='{"status":"removed","exitCode":0,"oomKilled":false}'
+  NETWORK_ARGS=(--network none); DATA_ARGS=(--tmpfs /data:ro)
+  if [ -n "$container" ]; then
+    running="$(docker inspect --format '{{.State.Running}}' "$container")"
+    runtime_image="$(docker inspect --format '{{.Image}}' "$container")"
+    container_state="$(docker inspect --format '{"status":"{{.State.Status}}","exitCode":{{.State.ExitCode}},"oomKilled":{{.State.OOMKilled}}}' "$container")"
+    if [ "$running" = true ]; then NETWORK_ARGS=(--network "container:$container"); fi
+  else runtime_image="$(docker image inspect --format '{{.Id}}' "$IMAGE" 2>/dev/null)" || runtime_image=""; fi
+  if [ -n "$runtime_image" ]; then
+    sites="$(docker run --pull never --rm -i --init --network none --read-only --tmpfs /tmp --entrypoint python "$runtime_image" -c 'import json,os; from pathlib import Path; print(json.dumps(json.loads(Path(os.environ.get("WORKLOG_SITE_CONFIG","/opt/worklog/config/dummy.json")).read_text())))')" || sites=null
+  fi
+  if docker volume inspect "${PROJECT}_board-data" >/dev/null 2>&1; then DATA_ARGS=(-v "${PROJECT}_board-data:/data:ro"); fi
+  exec docker run --pull never --rm -i --init "${NETWORK_ARGS[@]}" --read-only --tmpfs /tmp "${DATA_ARGS[@]}" \
+    -v "$ROOT:/workspace:ro" -w /workspace --entrypoint python "$PYTHON_IMAGE" \
+    /workspace/docker/doctor.py --project "$PROJECT" --running "$running" --image-sites "$sites" --container-state "$container_state"
+fi
 
 LOCK=""
 if ! LOCK="$(docker create --name "${PROJECT}-operation-lock" --label worklog.operation-lock=true "$PYTHON_IMAGE" /bin/true)"; then
