@@ -2,6 +2,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
+import sys
 
 import pytest
 
@@ -114,3 +116,33 @@ def test_workspace_output_repair_does_not_change_user_files(tmp_path):
         assert (root/name).stat().st_uid==12345
         assert (root/name/'keep.txt').stat().st_uid==0
         assert (root/name/'keep.txt').read_text()=='operator fixture'
+
+
+def test_first_failed_deployment_cannot_reuse_an_uncommitted_image(tmp_path):
+    root=tmp_path/'repo';(root/'docker').mkdir(parents=True);(root/'.agent').mkdir();(root/'config').mkdir()
+    shutil.copy2(ROOT/'docker/manage.sh',root/'docker/manage.sh')
+    shutil.copy2(ROOT/'.agent/images.lock',root/'.agent/images.lock')
+    shutil.copy2(ROOT/'config/dummy.json',root/'config/dummy.json')
+    fake=tmp_path/'docker';record=tmp_path/'calls'
+    fake.write_text('#!'+sys.executable+'\n'+'''import json,os,subprocess,sys
+from pathlib import Path
+a=sys.argv[1:]
+with open(os.environ['DOCKER_CALL_RECORD'],'a') as out:out.write(json.dumps(a)+'\\n')
+if a[0]=='create':print('lock')
+elif a[0]=='inspect':
+    print('true' if 'Running' in a[2] else 'sha256:orphan')
+elif a[:2]==['image','inspect']:print('sha256:orphan')
+elif a[0]=='compose' and 'ps' in a:print('orphan-container')
+elif a[0]=='compose' and 'up' in a:sys.exit(1)
+elif a[0]=='run' and '/opt/worklog/docker/deployment.py' in a:
+    offset=a.index('/opt/worklog/docker/deployment.py')
+    sys.exit(subprocess.run([sys.executable,os.environ['REAL_DEPLOYMENT'],*a[offset+1:],'--root',os.getcwd()]).returncode)
+''');fake.chmod(0o755)
+    env={**os.environ,'PATH':str(tmp_path)+os.pathsep+os.environ['PATH'],'DOCKER_CALL_RECORD':str(record),'REAL_DEPLOYMENT':str(ROOT/'docker/deployment.py'),'PYTHONPATH':str(ROOT)}
+    result=subprocess.run(['bash','docker/manage.sh','--project','fixture','start'],cwd=root,env=env,text=True,capture_output=True)
+    assert result.returncode!=0
+    calls=[json.loads(line) for line in record.read_text().splitlines()]
+    assert any(call[0]=='build' and '--target' in call and call[call.index('--target')+1]=='app' for call in calls)
+    assert any(call[0]=='compose' and 'stop' in call for call in calls)
+    assert not any(call[:2]==['tag','sha256:orphan'] for call in calls)
+    assert not (root/'.tmp/docker-state/fixture/compose.json').exists()

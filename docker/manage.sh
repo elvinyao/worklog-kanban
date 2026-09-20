@@ -59,6 +59,7 @@ if [ "$ACTION" = exec ]; then compose exec -T "$@"; exit; fi
 if [ "$ACTION" = doctor ]; then
   echo '[OK] Docker and Compose are available.'
   compose ps -a
+  service_states="$(compose ps -a --format json)"
   container="$(compose ps -a -q board)"; running=false; runtime_image=""; sites=null
   container_state='{"status":"removed","exitCode":0,"oomKilled":false}'
   NETWORK_ARGS=(--network none); DATA_ARGS=(--tmpfs /data:ro)
@@ -74,7 +75,7 @@ if [ "$ACTION" = doctor ]; then
   if docker volume inspect "${PROJECT}_board-data" >/dev/null 2>&1; then DATA_ARGS=(-v "${PROJECT}_board-data:/data:ro"); fi
   exec docker run --pull never --rm -i --init "${NETWORK_ARGS[@]}" --read-only --tmpfs /tmp "${DATA_ARGS[@]}" \
     -v "$ROOT:/workspace:ro" -w /workspace --entrypoint python "$PYTHON_IMAGE" \
-    /workspace/docker/doctor.py --project "$PROJECT" --running "$running" --image-sites "$sites" --container-state "$container_state"
+    /workspace/docker/doctor.py --project "$PROJECT" --running "$running" --image-sites "$sites" --container-state "$container_state" --service-states "$service_states"
 fi
 
 LOCK=""
@@ -102,7 +103,11 @@ export_extension() {
     /opt/worklog/docker/as_owner.py python /opt/worklog/docker/export_extension.py "$PROJECT"
 }
 rollback() {
-  if [ -z "$OLD_IMAGE" ]; then echo 'No prior image to restore. Data is retained.' >&2; return 1; fi
+  if [ -z "$OLD_IMAGE" ]; then
+    if ! compose stop; then echo 'Candidate services could not be stopped; inspect status/logs.' >&2; fi
+    echo 'No successful deployment to restore. Data retained. Retry start with the intended --config.' >&2
+    return 1
+  fi
   echo 'Restoring the previous image and deployment settings.' >&2
   docker tag "$OLD_IMAGE" "$IMAGE" || return 1
   if [ -f "$SNAPSHOT" ]; then COMPOSE_FILE="$SNAPSHOT"; fi
@@ -116,14 +121,15 @@ deploy() {
   local rebuild="$1" container mode
   OLD_IMAGE=""; OLD_RUNNING=false
   container="$(compose ps -a -q board)"
-  if [ -n "$container" ]; then
+  if [ -f "$SNAPSHOT" ] && [ -n "$container" ]; then
     OLD_IMAGE="$(docker inspect --format '{{.Image}}' "$container")"
     OLD_RUNNING="$(docker inspect --format '{{.State.Running}}' "$container")"
   elif [ -f "$SNAPSHOT" ]; then OLD_IMAGE="$(docker image inspect --format '{{.Id}}' "$IMAGE" 2>/dev/null)" || OLD_IMAGE=""; fi
   build_ops
-  mode="$(settings prepare "${CONFIG_ARGS[@]}")"
+  # macOS Bash 3.2 treats an empty array as unset under nounset.
+  mode="$(settings prepare ${CONFIG_ARGS[@]+"${CONFIG_ARGS[@]}"})"
   COMPOSE_FILE="$STATE_DIR/candidate.json"
-  if [ "$rebuild" = true ] || [ "$RECONFIGURE" = true ] || ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  if [ "$rebuild" = true ] || [ "$RECONFIGURE" = true ] || [ ! -f "$SNAPSHOT" ] || ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
     echo "Building $mode deployment in Docker..."
     BUILD_ARGS=(--target app)
     if [ "$mode" = production ]; then BUILD_ARGS=(--target production --secret "id=site_config,src=$STATE_DIR/candidate-sites.json" --build-arg "SITE_CONFIG_DIGEST=$(settings fingerprint)"); fi

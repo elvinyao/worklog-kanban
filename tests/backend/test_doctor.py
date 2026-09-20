@@ -77,3 +77,13 @@ def test_crashed_container_is_not_reported_as_normal_stopped(installation,state)
     root,data=installation
     reports=diagnose(root,'fixture',data,running=False,image_sites=json.loads((root/'config/dummy.json').read_text()),container_state=state)
     assert any(level=='FAIL' and 'container' in text.lower() for level,text in reports)
+
+@pytest.mark.parametrize('services',[
+    [{'Service':'board','State':'exited','ExitCode':143,'Health':''}],
+    [{'Service':name,'State':'exited','ExitCode':1 if name=='mattermost' else 143,'Health':''} for name in ('board','jira','mattermost')],
+])
+def test_missing_or_failed_dummy_services_make_diagnosis_fail(installation,services):
+    from docker.doctor import diagnose
+    root,data=installation
+    reports=diagnose(root,'fixture',data,running=False,image_sites=json.loads((root/'config/dummy.json').read_text()),service_states=services)
+    assert any(level=='FAIL' for level,_ in reports)

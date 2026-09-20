@@ -58,7 +58,7 @@ def inspect_database(data,running):
             return database_details(Path(temporary)/database.name)
 
 
-def diagnose(root,project,data,*,running,image_sites,container_state=None):
+def diagnose(root,project,data,*,running,image_sites,container_state=None,service_states=None):
     reports=[];root=Path(root).resolve();data=Path(data)
     def report(level,text):reports.append((level,text))
     def inside(relative):
@@ -80,6 +80,14 @@ def diagnose(root,project,data,*,running,image_sites,container_state=None):
         return reports
     if image_sites==sites:report('OK','Runtime image sites match the saved deployment.')
     else:report('FAIL','Runtime image sites unavailable or different; run update --local with the intended --config.')
+    if service_states:
+        expected={'board'} if sites['mode']=='production' else {'board','jira','mattermost'}
+        if {item.get('Service') for item in service_states}!=expected:
+            report('FAIL','Deployment services are incomplete or unexpected; inspect status and run start.')
+        for item in service_states:
+            state=item.get('State');code=item.get('ExitCode',0)
+            if state not in ('running','exited') or (state=='running' and item.get('Health')!='healthy') or (state=='exited' and code not in (0,143)):
+                report('FAIL','A deployment service is unhealthy or exited abnormally; inspect status/logs.')
     if container_state and (container_state.get('oomKilled') or container_state.get('status') not in ('running','exited','removed') or (not running and container_state.get('exitCode',0) not in (0,143))):
         report('FAIL','Board container exited abnormally or is not ready; inspect logs before starting it again.')
     if running:
@@ -99,11 +107,13 @@ def diagnose(root,project,data,*,running,image_sites,container_state=None):
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--project',required=True);parser.add_argument('--root',type=Path,default=Path('/workspace'));parser.add_argument('--data',type=Path,default=Path('/data'));parser.add_argument('--running',choices=['true','false'],default='false');parser.add_argument('--image-sites',default='null');parser.add_argument('--container-state',default='{}')
+    parser=argparse.ArgumentParser();parser.add_argument('--project',required=True);parser.add_argument('--root',type=Path,default=Path('/workspace'));parser.add_argument('--data',type=Path,default=Path('/data'));parser.add_argument('--running',choices=['true','false'],default='false');parser.add_argument('--image-sites',default='null');parser.add_argument('--container-state',default='{}');parser.add_argument('--service-states',default='')
     args=parser.parse_args()
     try:sites=json.loads(args.image_sites)
     except ValueError:sites=None
-    reports=diagnose(args.root,args.project,args.data,running=args.running=='true',image_sites=sites,container_state=json.loads(args.container_state))
+    raw=args.service_states.strip()
+    services=json.loads(raw) if raw.startswith('[') else [json.loads(line) for line in raw.splitlines() if line.strip()]
+    reports=diagnose(args.root,args.project,args.data,running=args.running=='true',image_sites=sites,container_state=json.loads(args.container_state),service_states=services)
     for level,message in reports:print(f'[{level}] {message}')
     print('No company services were contacted. No deployment or source data was changed.')
     raise SystemExit(1 if any(level=='FAIL' for level,_ in reports) else 0)
