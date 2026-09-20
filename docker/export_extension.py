@@ -4,6 +4,9 @@ from pathlib import Path
 import shutil
 import tempfile
 import uuid
+import os
+import re
+import sys
 
 
 def export(source:Path,target:Path):
@@ -32,6 +35,9 @@ def export(source:Path,target:Path):
 
 if __name__=='__main__':
     root=Path('/workspace').resolve()
-    target=root/'dist/extension-docker'
+    project=sys.argv[1] if len(sys.argv)>1 else 'worklog-kanban'
+    if not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,50}',project):raise SystemExit('Invalid project')
+    target=root/('dist/extension-docker' if project=='worklog-kanban' else 'dist/extensions/'+project)
     if not target.resolve().is_relative_to(root):raise SystemExit('Export path leaves the workspace')
-    export(Path('/opt/worklog/dist/extension-dummy'),target)
+    source='/opt/worklog/release/extension' if os.environ.get('WORKLOG_MODE')=='production' else '/opt/worklog/dist/extension-dummy'
+    export(Path(source),target)

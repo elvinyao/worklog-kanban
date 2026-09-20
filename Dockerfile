@@ -7,7 +7,7 @@ WORKDIR /opt/worklog
 COPY requirements/runtime.txt /opt/requirements/runtime.txt
 RUN --mount=type=cache,target=/root/.cache/pip python -m pip install --require-hashes -r /opt/requirements/runtime.txt
 
-FROM runtime-base AS builder
+FROM runtime-base AS frontend-build
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
@@ -16,7 +16,14 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY app ./app
 COPY src ./src
 COPY scripts/build.mjs ./scripts/build.mjs
-COPY tools/__init__.py tools/config.py ./tools/
+COPY tools/__init__.py tools/config.py tools/package.py ./tools/
+COPY requirements/runtime.txt ./requirements/runtime.txt
+
+FROM frontend-build AS production-builder
+ARG SITE_CONFIG_DIGEST
+RUN --mount=type=secret,id=site_config,required=true test -n "$SITE_CONFIG_DIGEST" && npm run build:production -- --config /run/secrets/site_config
+
+FROM frontend-build AS builder
 COPY config/dummy.json ./config/dummy.json
 RUN npm run build
 
@@ -27,12 +34,26 @@ COPY docker/as_owner.py /opt/as_owner.py
 WORKDIR /workspace
 ENTRYPOINT ["python", "/opt/as_owner.py", "bash", "/opt/update-source.sh"]
 
+FROM runtime-base AS operations
+COPY app ./app
+COPY docker ./docker
+ENV PYTHONPATH=/opt/worklog
+
+FROM runtime-base AS production
+COPY --from=production-builder /opt/worklog/dist/production ./release
+COPY docker ./docker
+RUN useradd --uid 10001 --create-home worklog && mkdir /data && chown worklog:worklog /data
+ENV WORKLOG_MODE=production WORKLOG_SITE_CONFIG=/opt/worklog/release/site-config.json PYTHONPATH=/opt/worklog
+USER 10001:10001
+EXPOSE 4173
+CMD ["python", "/opt/worklog/release/run.py", "--config", "/opt/worklog/release/site-config.json", "--database", "/data/board.sqlite3"]
+
 FROM runtime-base AS app
 COPY app ./app
 COPY dummy ./dummy
 COPY tools/__init__.py tools/board.py tools/dev.py ./tools/
 COPY config/dummy.json ./config/dummy.json
-COPY docker/__init__.py docker/healthcheck.py docker/preflight.py docker/export_extension.py docker/as_owner.py docker/save_state.py ./docker/
+COPY docker ./docker
 COPY --from=builder /opt/worklog/dist ./dist
 RUN useradd --uid 10001 --create-home worklog && mkdir /data && chown worklog:worklog /data
 ENV WORKLOG_DATABASE=/data/board.sqlite3 PYTHONPATH=/opt/worklog

@@ -15,6 +15,7 @@
 !tools/
 !tools/__init__.py
 !tools/config.py
+!tools/package.py
 !tools/board.py
 !tools/dev.py
 !config/

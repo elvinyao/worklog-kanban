@@ -1,4 +1,8 @@
 import sys
+import json
+import os
+from pathlib import Path
+from urllib.parse import urlsplit
 import urllib.request
 
 SERVICES={
@@ -10,7 +14,10 @@ SERVICES={
 
 def check(name):
     host,port,route=SERVICES[name]
-    request=urllib.request.Request(f'http://127.0.0.1:{port}{route}',headers={'Host':f'{host}:{port}'})
+    authority=f'{host}:{port}'
+    if name=='board' and os.environ.get('WORKLOG_MODE')=='production':
+        authority=urlsplit(json.loads(Path(os.environ['WORKLOG_SITE_CONFIG']).read_text())['boardOrigin']).netloc
+    request=urllib.request.Request(f'http://127.0.0.1:{port}{route}',headers={'Host':authority})
     with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request,timeout=2) as response:
         if response.status!=200:raise RuntimeError('Service is not healthy')
 

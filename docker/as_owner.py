@@ -18,7 +18,7 @@ if __name__=='__main__':
     root=Path('/workspace')
     owner=root.stat()
     if os.getuid()==0:
-        if len(sys.argv)>2 and sys.argv[2] in ('/opt/worklog/docker/export_extension.py','/opt/worklog/docker/save_state.py'):
+        if len(sys.argv)>2 and sys.argv[2] in ('/opt/worklog/docker/export_extension.py','/opt/worklog/docker/save_state.py','/opt/worklog/docker/deployment.py'):
             prepare_outputs(root,owner)
         os.setgroups([])
         os.setgid(owner.st_gid)
