@@ -42,15 +42,15 @@ def test_legacy_migration_is_lossless_backed_up_and_idempotent(tmp_path):
     assert bound.unassignedMattermostLinks==[] and orphan.jiraLinks==[]
     assert [(m.id,m.postId) for m in orphan.unassignedMattermostLinks]==[('legacy','b'*26)]
     assert empty.jiraLinks==[] and empty.unassignedMattermostLinks==[]
-    backups=list(tmp_path.glob('board.sqlite3.pre-v2-*.sqlite3'));assert len(backups)==1
+    backups=list(tmp_path.glob('board.sqlite3.pre-v3-*.sqlite3'));assert len(backups)==1
     with sqlite3.connect(backups[0]) as connection:
         assert connection.execute('PRAGMA user_version').fetchone()[0]==1
         assert connection.execute('SELECT COUNT(*) FROM mattermost_links').fetchone()[0]==3
     with sqlite3.connect(path) as connection:
-        assert connection.execute('PRAGMA user_version').fetchone()[0]==2
+        assert connection.execute('PRAGMA user_version').fetchone()[0]==3
         assert connection.execute('PRAGMA foreign_key_check').fetchall()==[]
         assert connection.execute('SELECT COUNT(*) FROM audit_events').fetchone()[0]==1
-    store.initialize();assert store.snapshot()==board;assert list(tmp_path.glob('board.sqlite3.pre-v2-*.sqlite3'))==backups
+    store.initialize();assert store.snapshot()==board;assert list(tmp_path.glob('board.sqlite3.pre-v3-*.sqlite3'))==backups
 
 def test_migration_failure_rolls_back_schema_data_and_version(tmp_path,monkeypatch):
     from app import associations

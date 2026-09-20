@@ -33,28 +33,37 @@ class Store:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connection() as connection:
             version = connection.execute('PRAGMA user_version').fetchone()[0]
-            if version > 2:
+            if version > 3:
                 raise StoreError('unsupported_database_version')
             connection.execute('PRAGMA journal_mode=WAL')
-            legacy = version < 2 and connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='cards'").fetchone() is not None
-            if legacy:
-                backup_path = self.path.with_name(self.path.name+'.pre-v2-'+uuid.uuid4().hex+'.sqlite3')
+            existing = connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='cards'").fetchone() is not None
+            legacy = version < 2 and existing
+            if existing and version < 3:
+                backup_path = self.path.with_name(self.path.name+'.pre-v3-'+uuid.uuid4().hex+'.sqlite3')
                 with sqlite3.connect(backup_path) as backup:
                     connection.backup(backup)
             prefix = 'BEGIN IMMEDIATE;\n'
             if legacy:
                 prefix += 'ALTER TABLE mattermost_links RENAME TO legacy_mattermost_links;\n'
+            if existing and version < 3:
+                prefix += 'ALTER TABLE columns ADD COLUMN is_done INTEGER NOT NULL DEFAULT 0 CHECK(is_done IN (0,1));\n'
             connection.executescript(prefix+Path(__file__).with_name('schema.sql').read_text())
             if legacy:
                 associations.migrate_legacy(connection)
+            if existing and version < 3:
+                self._migrate_completed_columns(connection)
             if connection.execute('SELECT 1 FROM board_meta WHERE id=1').fetchone() is None:
                 connection.execute('INSERT INTO board_meta VALUES (1,0)')
                 for position, name in enumerate(['待处理','调查中','实装中','单体测试','结合测试','完成']):
-                    connection.execute('INSERT INTO columns VALUES (?,?,?)', (uuid.uuid4().hex,name,position))
+                    connection.execute('INSERT INTO columns (id,name,position,is_done) VALUES (?,?,?,?)', (uuid.uuid4().hex,name,position,int(name=='完成')))
             if connection.execute('PRAGMA foreign_key_check').fetchall():
                 raise StoreError('invalid_database')
-            connection.execute('PRAGMA user_version=2')
+            connection.execute('PRAGMA user_version=3')
             connection.commit()
+
+    @staticmethod
+    def _migrate_completed_columns(connection):
+        connection.execute("UPDATE columns SET is_done=1 WHERE name='完成' AND id NOT IN (SELECT resource_id FROM audit_events WHERE action IN ('column.create','column.rename'))")
 
     def snapshot(self) -> BoardSnapshot:
         with self.connection() as connection:
@@ -64,26 +73,33 @@ class Store:
     @staticmethod
     def _snapshot(connection):
         revision = connection.execute('SELECT revision FROM board_meta WHERE id=1').fetchone()[0]
-        columns = [dict(row) for row in connection.execute('SELECT id,name,position FROM columns ORDER BY position')]
+        columns = [dict(row) for row in connection.execute('SELECT id,name,position,is_done FROM columns ORDER BY position')]
         # Seed columns alone lack create/rename audit records. This also works for
         # existing databases without rewriting names or migrating stored data.
         custom = {row[0] for row in connection.execute("SELECT DISTINCT resource_id FROM audit_events WHERE action IN ('column.create','column.rename')")}
         defaults = dict(zip(['待处理','调查中','实装中','单体测试','结合测试','完成'], ['todo','investigating','implementing','unitTesting','integrationTesting','done']))
         for column in columns:
+            column['isDone'] = bool(column.pop('is_done'))
             column['defaultNameKey'] = None if column['id'] in custom else defaults.get(column['name'])
         tickets, unassigned = associations.snapshot(connection)
         cards = []
         for row in connection.execute('SELECT cards.* FROM cards JOIN columns ON cards.column_id=columns.id ORDER BY columns.position,cards.position'):
             cards.append({'id':row['id'],'columnId':row['column_id'],'title':row['title'],'notes':row['notes'],'position':row['position'],'version':row['version'],'jiraLinks':tickets.get(row['id'],[]),'unassignedMattermostLinks':unassigned.get(row['id'],[])})
-        return BoardSnapshot(revision=revision,columns=columns,cards=cards)
+        count=connection.execute('SELECT COUNT(*) FROM board_archives').fetchone()[0]
+        return BoardSnapshot(revision=revision,columns=columns,cards=cards,archiveCount=count)
+
+    @staticmethod
+    def _record(connection, action, resource_id, source_ip):
+        revision=connection.execute('UPDATE board_meta SET revision=revision+1 WHERE id=1 RETURNING revision').fetchone()[0]
+        connection.execute('INSERT INTO audit_events (revision,timestamp,action,resource_id,source_ip) VALUES (?,?,?,?,?)',(revision,datetime.now(timezone.utc).isoformat(),action,resource_id,source_ip))
+        return revision
 
     def _write(self, action, resource_id, source_ip, operation):
         try:
             with self.connection() as connection:
                 connection.execute('BEGIN IMMEDIATE')
                 operation(connection)
-                revision = connection.execute('UPDATE board_meta SET revision=revision+1 WHERE id=1 RETURNING revision').fetchone()[0]
-                connection.execute('INSERT INTO audit_events (revision,timestamp,action,resource_id,source_ip) VALUES (?,?,?,?,?)', (revision,datetime.now(timezone.utc).isoformat(),action,resource_id,source_ip))
+                self._record(connection,action,resource_id,source_ip)
                 result = self._snapshot(connection)
                 connection.commit()
                 return result
@@ -108,6 +124,9 @@ class Store:
     def _card(connection, card_id):
         row = connection.execute('SELECT * FROM cards WHERE id=?', (card_id,)).fetchone()
         if row is None:
+            archived=connection.execute('SELECT archive_id FROM archived_cards WHERE card_id=?',(card_id,)).fetchone()
+            if archived:
+                raise StoreError('archived',archived[0])
             raise StoreError('not_found')
         return row
 
@@ -163,8 +182,8 @@ class Store:
 
     def move_card(self, card_id: str, data: MoveCard, source_ip: str):
         def operation(connection):
-            self._revision(connection,data.expectedBoardRevision)
             card = self._card(connection,card_id)
+            self._revision(connection,data.expectedBoardRevision)
             self._column(connection,data.targetColumnId)
             source = card['column_id']
             orders = {column:self._ids(connection,column) for column in {source,data.targetColumnId}}
@@ -182,15 +201,18 @@ class Store:
             position = connection.execute('SELECT COUNT(*) FROM columns').fetchone()[0]
             if position >= 100:
                 raise StoreError('column_limit')
-            connection.execute('INSERT INTO columns VALUES (?,?,?)', (column_id,data.name,position))
+            connection.execute('INSERT INTO columns (id,name,position) VALUES (?,?,?)', (column_id,data.name,position))
         return self._write('column.create',column_id,source_ip,operation)
 
     def rename_column(self, column_id: str, data: ChangeColumn, source_ip: str):
         def operation(connection):
             self._revision(connection,data.expectedBoardRevision)
             self._column(connection,column_id)
-            connection.execute('UPDATE columns SET name=? WHERE id=?', (data.name,column_id))
-        return self._write('column.rename',column_id,source_ip,operation)
+            if 'name' in data.model_fields_set:
+                connection.execute('UPDATE columns SET name=? WHERE id=?', (data.name,column_id))
+            if 'isDone' in data.model_fields_set:
+                connection.execute('UPDATE columns SET is_done=? WHERE id=?', (int(data.isDone),column_id))
+        return self._write('column.rename' if 'name' in data.model_fields_set else 'column.completion',column_id,source_ip,operation)
 
     @staticmethod
     def _arrange_columns(connection, ids):

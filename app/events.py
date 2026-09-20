@@ -3,6 +3,7 @@ from collections.abc import Callable
 import logging
 
 from app.schemas import BoardSnapshot
+from app.write_result import WriteResult
 
 logger = logging.getLogger('worklog')
 
@@ -58,9 +59,10 @@ class WriteCoordinator:
         async def committed():
             async with self.lock:
                 result = await asyncio.to_thread(operation)
-                self.hub.publish(result.revision)
-                logger.info('operation=%s revision=%d source=%s',action,result.revision,source)
-                return result
+                if not isinstance(result,WriteResult) or result.committed:
+                    self.hub.publish(result.revision)
+                    logger.info('operation=%s revision=%d source=%s',action,result.revision,source)
+                return result.value if isinstance(result,WriteResult) else result
         task = asyncio.create_task(committed())
         self.tasks.add(task)
         task.add_done_callback(self.tasks.discard)

@@ -8,8 +8,8 @@ logger = logging.getLogger('worklog')
 MAX_BODY = 512 * 1024
 
 
-def error_response(code: str, status: int, fields=None):
-    return JSONResponse({'code':code,'fields':fields or []},status_code=status)
+def error_response(code: str, status: int, fields=None, archive_id=None):
+    return JSONResponse({'code':code,'fields':fields or [],**({'archiveId':archive_id} if archive_id else {})},status_code=status)
 
 
 def source_ip(request, trusted_proxies):

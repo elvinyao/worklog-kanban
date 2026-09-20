@@ -3,7 +3,7 @@ import type { Card,Snapshot } from '../../src/web/api';
 import { SharedBoard,type Subscription } from '../../src/web/state/shared';
 import { draftFrom,reconcileDraft,payloadFrom } from '../../src/web/state/drafts';
 const card:Card={id:'card',title:'共享标题',notes:'原笔记',version:1,columnId:'column',position:0,jiraLinks:[],unassignedMattermostLinks:[]};
-const snapshot=(revision:number):Snapshot=>({revision,columns:[{id:'column',name:'待处理',position:0}],cards:[card]});
+const snapshot=(revision:number):Snapshot=>({revision,archiveCount:0,columns:[{id:'column',name:'待处理',position:0,isDone:false}],cards:[card]});
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 it('subscribes before snapshot and refetches when an event arrives during the first fetch',async()=>{
  let listener:Subscription|undefined;let resolveFirst:(value:Snapshot)=>void=()=>{};

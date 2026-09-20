@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
 Identifier = Annotated[str, Field(min_length=1, max_length=100, pattern=r'^[A-Za-z0-9_-]+$')]
 Title = Annotated[str, Field(min_length=1, max_length=200)]
@@ -64,6 +64,19 @@ class ChangeColumn(SharedModel):
     expectedBoardRevision: Revision
 
 
+class EditColumn(SharedModel):
+    name: Name | None = None
+    isDone: bool | None = None
+    expectedBoardRevision: Revision
+
+    @model_validator(mode='after')
+    def editable_fields(self):
+        fields=self.model_fields_set-{'expectedBoardRevision'}
+        if not fields or any(getattr(self,key) is None for key in fields):
+            raise ValueError('Supply non-null editable fields')
+        return self
+
+
 class ReorderColumns(SharedModel):
     columnIds: Annotated[list[Identifier], Field(min_length=1, max_length=100)]
     expectedBoardRevision: Revision
@@ -84,6 +97,7 @@ class Column(SharedModel):
     id: Identifier
     name: Name
     position: Annotated[int, Field(ge=0)]
+    isDone: bool = False
     defaultNameKey: Literal['todo','investigating','implementing','unitTesting','integrationTesting','done'] | None = None
 
 
@@ -117,6 +131,86 @@ class BoardSnapshot(SharedModel):
     revision: Revision
     columns: list[Column]
     cards: list[Card]
+    archiveCount: Annotated[int, Field(ge=0)] = 0
+
+
+class ArchiveSelection(SharedModel):
+    requestId: Identifier
+    expectedBoardRevision: Revision
+    cardIds: Annotated[list[Identifier], Field(min_length=1,max_length=5000)]
+
+    @model_validator(mode='after')
+    def unique_cards(self):
+        if len(set(self.cardIds))!=len(self.cardIds):
+            raise ValueError('Duplicate card')
+        return self
+
+
+class ArchiveMetadata(SharedModel):
+    name: Name
+    description: Annotated[str, Field(max_length=500)] = ''
+
+    @field_validator('name')
+    @classmethod
+    def nonempty_name(cls,value):
+        if not value.strip():
+            raise ValueError('Name is required')
+        return value.strip()
+
+
+class CreateArchive(ArchiveSelection, ArchiveMetadata):
+    pass
+
+
+class EditArchive(SharedModel):
+    name: Name | None = None
+    description: Annotated[str, Field(max_length=500)] | None = None
+    expectedMetadataVersion: Version
+
+    @model_validator(mode='after')
+    def editable_fields(self):
+        fields=self.model_fields_set-{'expectedMetadataVersion'}
+        if not fields or any(getattr(self,key) is None for key in fields):
+            raise ValueError('Supply non-null editable fields')
+        if self.name is not None:
+            self.name=self.name.strip()
+            if not self.name:
+                raise ValueError('Name is required')
+        return self
+
+
+class RestoreArchive(ArchiveSelection):
+    targetColumnId: Identifier
+
+
+class ArchiveSummary(ArchiveMetadata):
+    id: Identifier
+    createdAt: str
+    sourceRevision: Revision
+    metadataVersion: Version
+    cardCount: Annotated[int, Field(ge=0)]
+    jiraLinkCount: Annotated[int, Field(ge=0)]
+
+
+class ArchiveDetail(ArchiveSummary):
+    snapshot: BoardSnapshot
+    restoredCards: dict[str,str]
+
+
+class ArchiveList(SharedModel):
+    items: list[ArchiveSummary]
+    total: Annotated[int, Field(ge=0)]
+    nextCursor: str | None = None
+
+
+class ArchiveWrite(SharedModel):
+    archiveId: Identifier
+    board: BoardSnapshot
+    restoredCards: dict[str,str] = Field(default_factory=dict)
+
+
+class ArchiveLocation(SharedModel):
+    archiveId: Identifier
 
 
 class RevisionEvent(SharedModel):
@@ -126,3 +220,4 @@ class RevisionEvent(SharedModel):
 class ErrorResponse(SharedModel):
     code: str
     fields: list[str] = Field(default_factory=list)
+    archiveId: Identifier | None = None

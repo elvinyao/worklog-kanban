@@ -6,6 +6,7 @@ from app.store import StoreError
 
 # Never echo an arbitrary submitted field name or input value.
 LOCATIONS = {'body','path','query','header','title','notes','columnId','jiraLinks','unassignedMattermostLinks','mattermostLinks','id','url','description','expectedVersion','targetColumnId','index','expectedBoardRevision','name','columnIds','card_id','column_id'}
+LOCATIONS |= {'archive_id','requestId','cardIds','expectedMetadataVersion','isDone','q','cursor','limit'}
 
 
 def install_errors(app):
@@ -16,8 +17,8 @@ def install_errors(app):
 
     @app.exception_handler(StoreError)
     async def store_failure(request,error):
-        status = 409 if error.code=='conflict' else 404 if error.code=='not_found' else 503 if error.code=='busy' else 400
-        return error_response(error.code,status)
+        status = 409 if error.code in {'conflict','archived','request_conflict','already_restored'} else 404 if error.code=='not_found' else 503 if error.code=='busy' else 400
+        return error_response(error.code,status,archive_id=error.archive_id)
 
     @app.exception_handler(HTTPException)
     async def http_failure(request,error):
