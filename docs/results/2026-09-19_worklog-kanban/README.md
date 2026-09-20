@@ -56,6 +56,9 @@ T19 受测实现 `582530e`；91 前端、106 后端、完整普通浏览器 38 �
 
 ## 下一步与阻碍
 
+- T20/T21 正在修复预览闲置后消失，并实现 Card → 多 Jira → 多 Mattermost；[设计](../../2026-09-20_jira-hierarchy/設計.md)、[计划](../../2026-09-20_jira-hierarchy/対応計画.md)、[追加观察点](追加テスト観点_階層.md)。现有数据库需保留并迁移，先在合成旧库验证。
+- T20 自动恢复已实现并通过 97 单元及相关浏览器验证，[初验与 RED](task20_preview-recovery/attempt-001/実行結果.md)、[复验](task20_preview-recovery/attempt-002/実行結果.md)；T21 层级与数据迁移继续实施，Docker 将在集成后统一更新。
+
 - T19 的[设计与范围](../../2026-09-20_extension-settings/設計.md)、[实施计划](../../2026-09-20_extension-settings/対応計画.md)和[设置手动步骤](../../2026-09-20_extension-settings/手動確認手順.md)。用户需重新加载扩展并刷新看板；ES-M01 原生弹窗允许/拒绝在实际 Chrome/Edge 待验，Chrome 管理页预授权测试不能替代这一步。
 - 默认 Docker 看板、Jira、Mattermost 已启动，可访问 `http://board.localhost:4173/`；四个双击入口和 `bash docker.sh` 用法见 [运行说明](../../运行说明.md)。个人预览首次需加载 `dist/extension-docker`。没有外部部署或 push。
 - 剩余 dummy 必需项：按 M06 验证真实 OS 输入法；按 M07 在实际 Chrome、Edge 安装扩展并完成核心操作。记录到新的 manual/run，再建立后续 acceptance 记录，不覆盖本次记录。

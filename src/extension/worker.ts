@@ -39,8 +39,9 @@ chrome.action.onClicked.addListener(()=>{void chrome.runtime.openOptionsPage();}
 chrome.runtime.onConnect.addListener(port=>{
  const pending=new Map<string,AbortController>();const used=new Set<string>();
  let closed=false,verified=false,config:SiteConfig|null=null,revision=-1;
- const close=()=>{if(closed)return;closed=true;for(const controller of pending.values())controller.abort();pending.clear();used.clear();sessions.delete(close);port.disconnect();};
- if(port.name!=='worklog'){close();return;}sessions.add(close);
+ const close=()=>{if(closed)return;closed=true;for(const controller of pending.values())controller.abort();pending.clear();used.clear();sessions.delete(invalidate);try{port.disconnect();}catch{/* Already closed. */}};
+ const invalidate=()=>{if(closed)return;try{port.postMessage({control:'invalidate'});}catch{/* A stopped worker/tab may already have closed the port. */}finally{close();}};
+ if(port.name!=='worklog'){close();return;}sessions.add(invalidate);
  let ordered=settings.state().then(()=>{if(closed)return;config=settings.active;revision=settings.revision;if(!config||!allowedSender(port.sender,chrome.runtime.id,config))close();});
  const send=(reply:PreviewReply)=>{if(!closed&&config&&revision===settings.revision)port.postMessage(parseReply(reply,config));};
  port.onMessage.addListener((raw:unknown)=>{

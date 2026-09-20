@@ -1,6 +1,7 @@
 // Stable English keys; each value is [Simplified Chinese, English, Japanese].
 // UI text only. Shared card data and external content are never translation keys.
 export const messages = {
+  "preview.reconnecting": ["正在恢复个人预览连接…", "Reconnecting personal previews…", "個人プレビューに再接続しています…"],
   "extension.title": ["扩展连接设置", "Extension connection settings", "拡張機能の接続設定"],
   "extension.eyebrow": ["你的工作空间", "YOUR WORKSPACE", "あなたのワークスペース"],
   "extension.description": ["连接你的看板、Jira 和 Mattermost。设置仅用于当前浏览器。", "Connect your board, Jira and Mattermost. These settings apply only to this browser.", "ボード、Jira、Mattermost に接続します。この設定は現在のブラウザーにのみ適用されます。"],

@@ -2,18 +2,19 @@ import { record, type SiteConfig } from '../contracts/config';
 import { parseReply, parseRequest, type PreviewReply, type PreviewRequest } from '../contracts/preview-messages';
 import { TransportError } from './transport-error';
 import {siteAddresses} from '../contracts/extension-settings';
+export type DisconnectReason='transport'|'invalidated';
 
 export class ExtensionClient {
   private pending = new Map<string,{resolve:(v:PreviewReply)=>void;reject:(e:Error)=>void;timer:ReturnType<typeof setTimeout>}>();
   private disposed = false;
-  constructor(private config:SiteConfig, private disconnected:()=>void = () => {}) {
+  constructor(private config:SiteConfig, private disconnected:(reason:DisconnectReason)=>void = () => {}) {
     window.addEventListener('message',this.receive);
   }
   private receive = (event:MessageEvent<unknown>) => {
-    if (event.origin !== this.config.boardOrigin || event.source !== window) return;
+    if (this.disposed || event.origin !== this.config.boardOrigin || event.source !== window) return;
     try {
       const message = record(event.data);
-      if (message.channel === 'worklog:status' && message.connected === false) { this.failAll(); this.disconnected(); return; }
+      if (message.channel === 'worklog:status' && message.connected === false) { this.failAll(); this.disconnected(message.reason==='invalidated'?'invalidated':'transport'); return; }
       if (message.channel !== 'worklog:reply') return;
       const reply = parseReply(message.payload,this.config);
       const pending = this.pending.get(reply.id);

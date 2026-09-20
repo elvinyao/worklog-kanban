@@ -20,8 +20,8 @@ async function worker(){
  function port(origin=defaults.boardOrigin){
   let receive:(data:unknown)=>void=()=>{};const replies:unknown[]=[];
   const sender={id:'extension',origin,url:origin+'/',frameId:0,tab:{id:1}} as chrome.runtime.MessageSender;
-  const disconnect=vi.fn();connect({name:'worklog',sender,postMessage:(reply:unknown)=>replies.push(reply),disconnect,onMessage:{addListener:(fn:typeof receive)=>{receive=fn;}},onDisconnect:{addListener:vi.fn()}} as unknown as chrome.runtime.Port);
-  return {send:(data:unknown)=>receive(data),replies,disconnect,sender};
+  const disconnect=vi.fn(),post=vi.fn((reply:unknown)=>{replies.push(reply);});connect({name:'worklog',sender,postMessage:post,disconnect,onMessage:{addListener:(fn:typeof receive)=>{receive=fn;}},onDisconnect:{addListener:vi.fn()}} as unknown as chrome.runtime.Port);
+  return {send:(data:unknown)=>receive(data),replies,disconnect,sender,post};
  }
  return {port,manage,platform,read,revoke:()=>{permissions=false;removed({origins:['http://jira.localhost/*']});}};
 }
@@ -42,12 +42,18 @@ it('permission removal immediately cancels reads and rejects new sessions',async
  const signal=h.read.mock.calls[0]![2];h.revoke();expect(signal.aborted).toBe(true);expect(p.disconnect).toHaveBeenCalled();
  const next=h.port();await vi.waitFor(()=>expect(next.disconnect).toHaveBeenCalled());expect(h.platform.register).toHaveBeenLastCalledWith(null);
 });
+it('one already closed port cannot prevent other pages from being invalidated',async()=>{
+ const h=await worker(),first=h.port(),second=h.port();
+ first.post.mockImplementation(()=>{throw new Error('Closed port');});first.disconnect.mockImplementation(()=>{throw new Error('Closed port');});
+ expect(await h.manage({op:'settings.save',sites:siteAddresses(defaults)})).toMatchObject({ok:true});
+ expect(second.replies).toContainEqual({control:'invalidate'});expect(second.disconnect).toHaveBeenCalled();
+});
 it('only the options page may write settings, and switching invalidates pending reads before late results',async()=>{
  const h=await worker(),p=h.port();let finish:(data:unknown)=>void=()=>{};
  h.read.mockImplementationOnce((_request,config,signal)=>new Promise(resolve=>{finish=()=>resolve({kind:'jira',key:'DEMO-1',url:config.jiraBaseUrl+'/browse/DEMO-1',summary:'Old content',assignee:null,status:'Open',comment:null});expect(signal.aborted).toBe(false);}));
  expect(await h.manage({op:'settings.save',sites:siteAddresses(defaults)},p.sender)).toBeUndefined();expect(h.platform.persist).not.toHaveBeenCalled();
  p.send({version:1,id:'hello',op:'hello',sites:siteAddresses(defaults)});p.send({version:1,id:'slow',op:'jira.preview',key:'DEMO-1'});await vi.waitFor(()=>expect(h.read).toHaveBeenCalledTimes(1));
  const signal=h.read.mock.calls[0]![2];expect((await h.manage({op:'settings.save',sites:{...siteAddresses(defaults),boardOrigin:'http://board.localhost:4192'}})).ok).toBe(true);
- expect(signal.aborted).toBe(true);expect(p.disconnect).toHaveBeenCalled();finish(undefined);await Promise.resolve();expect(p.replies).toHaveLength(1);
+ expect(signal.aborted).toBe(true);expect(p.disconnect).toHaveBeenCalled();finish(undefined);await Promise.resolve();expect(p.replies).toHaveLength(2);expect(p.replies[1]).toEqual({control:'invalidate'});
  const old=h.port();await vi.waitFor(()=>expect(old.disconnect).toHaveBeenCalled());expect(h.read).toHaveBeenCalledTimes(1);
 });

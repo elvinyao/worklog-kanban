@@ -13,14 +13,18 @@ if(window.top===window){
    const response=record(reply);if(response.ok!==true)throw new Error('Unavailable');
    const config=validateConfig(response.config);
    if(!active||mine!==generation||!allowedPage(location.origin,window.top===window,true,config))throw new Error('Unavailable');
-   const current=chrome.runtime.connect({name:'worklog'});port=current;
+   const current=chrome.runtime.connect({name:'worklog'});port=current;let invalidated=false;
    current.onMessage.addListener((raw:unknown)=>{
     if(!active||port!==current)return;
-    try{window.postMessage({channel:'worklog:reply',payload:parseReply(raw,config)},config.boardOrigin);}catch{/* Reject invalid replies. */}
+    try{
+     const message=record(raw);
+     if(message.control==='invalidate'){exact(message,['control']);invalidated=true;window.postMessage({channel:'worklog:status',connected:false,reason:'invalidated'},config.boardOrigin);return;}
+     window.postMessage({channel:'worklog:reply',payload:parseReply(raw,config)},config.boardOrigin);
+    }catch{/* Reject invalid replies. */}
    });
    current.onDisconnect.addListener(()=>{
     if(port!==current)return;port=undefined;connecting=undefined;generation++;
-    window.postMessage({channel:'worklog:status',connected:false},config.boardOrigin);
+    window.postMessage({channel:'worklog:status',connected:false,reason:invalidated?'invalidated':'transport'},config.boardOrigin);
    });
    return {port:current,config};
   });

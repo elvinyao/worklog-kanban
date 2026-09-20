@@ -51,3 +51,13 @@ it('an overall request timeout marks the prior preview stale without claiming ex
  const s=setup();s.store.setResources([resource(1)]);s.store.connect();s.ok(0,1);await tick();s.store.refresh(resource(1).url);s.calls[1]!.reject(new TransportError('network'));await tick();
  expect(s.views.get(resource(1).url)?.state).toMatchObject({status:'stale',lastSuccess:1000,error:{code:'network'}});s.store.dispose();
 });
+it('temporary suspension preserves successful content and resumes only interrupted resources',async()=>{
+ const s=setup();s.store.setResources([resource(1),resource(2)]);s.store.connect();s.ok(0,1);await tick();
+ s.store.suspend();expect(s.views.get(resource(1).url)?.state).toMatchObject({status:'ready',lastSuccess:1000});expect(s.transport.cancel).toHaveBeenCalledWith(s.calls[1]!.request.id);
+ s.calls[1]!.reject(new TransportError('disconnected'));await tick();s.store.connect(true);expect(s.calls).toHaveLength(3);expect(s.calls[2]!.request).toMatchObject({key:'DEMO-2'});
+ s.ok(2,2);await tick();expect(s.views.get(resource(2).url)?.state.status).toBe('ready');s.store.dispose();
+});
+it('transport recovery does not turn completed permission errors into automatic source polling',async()=>{
+ const s=setup();s.store.setResources([resource(1),resource(2),resource(3)]);s.store.connect();s.fail(0,'login_required');s.fail(1,'unavailable');s.fail(2,'protocol');await tick();
+ s.store.suspend();s.store.connect(true);await tick();expect(s.calls).toHaveLength(3);expect(s.views.get(resource(1).url)?.state).toEqual({status:'error',error:{code:'login_required'}});s.store.dispose();
+});

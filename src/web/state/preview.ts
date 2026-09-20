@@ -24,7 +24,7 @@ export class PreviewStore {
   }
   this.emit();this.pump();
  }
- connect(){if(this.disposed||this.connected)return;this.connected=true;for(const entry of this.entries.values())this.enqueue(entry);this.emit();this.pump();}
+ connect(resume=false){if(this.disposed||this.connected)return;this.connected=true;for(const entry of this.entries.values())if(!resume||entry.view.state.status==='idle'||(entry.view.state.status==='stale'&&entry.view.state.error.code==='disconnected'))this.enqueue(entry);this.emit();this.pump();}
  refresh(key:string){const entry=this.entries.get(key);if(!this.connected||this.disposed||!entry)return;this.enqueue(entry);this.emit();this.pump();}
  refreshAll(){if(!this.connected||this.disposed)return;for(const entry of this.entries.values())this.enqueue(entry);this.emit();this.pump();}
  private enqueue(entry:Entry){
@@ -59,6 +59,14 @@ export class PreviewStore {
   }else{entry.cached=undefined;entry.view={state:{status:'error',error},retryAt};}
  }
  private cancel(entry:Entry){if(entry.id){const id=entry.id;entry.id=undefined;this.transport.cancel(id);}entry.queued=false;}
+ suspend(){
+  if(this.disposed)return;this.connected=false;this.queue=[];
+  for(const entry of this.entries.values()){
+   const interrupted=!!entry.id||entry.queued;this.cancel(entry);
+   if(interrupted)entry.view={...entry.view,state:entry.cached?{status:'stale',...entry.cached,error:{code:'disconnected'}}:{status:'idle'}};
+  }
+  this.emit();
+ }
  disconnect(){
   this.connected=false;this.queue=[];
   for(const entry of this.entries.values()){this.cancel(entry);entry.cached=undefined;entry.view={state:{status:'error',error:{code:'disconnected'}},retryAt:this.cooldowns.get(resourceKey(entry.resource))??0};}
