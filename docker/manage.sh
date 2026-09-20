@@ -96,7 +96,7 @@ rollback() {
       COMPOSE=(docker compose --project-directory "$ROOT" --project-name "$PROJECT" -f "$SNAPSHOT")
     fi
     if ! compose up -d --no-build --pull never --force-recreate --wait --wait-timeout 60; then
-      echo 'The previous image may not support an upgraded database. Data has not been overwritten. See docs/运行说明.md for restoring a pre-v2 backup; do not purge the volume.' >&2
+      echo 'The previous image may not support an upgraded database. Data has not been overwritten. See docs/运行说明.md for restoring a compatible pre-v3 backup; do not purge the volume.' >&2
       return 1
     fi
     if [ "$OLD_RUNNING" != true ]; then compose stop || return 1; fi

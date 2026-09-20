@@ -6,7 +6,7 @@ test('home previews default off, detail loads only its card, toggle persists and
  await seedCard(alice,'按需预览','DEMO-1',[{url:mm+'/demo/pl/'+'a'.repeat(26),description:''}]);
  await seedCard(alice,'保持隐藏','DEMO-2');
  const beforeJ=(await inspect(jc)).requests.length,beforeM=(await inspect(mc)).requests.length;
- const page=await alice.newPage();await page.goto(board);
+ const page=await alice.newPage();await page.addInitScript(()=>{const active=new Set<string>();Object.assign(window,{__activeAvatarUrls:active});const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);URL.createObjectURL=value=>{const url=create(value);active.add(url);return url;};URL.revokeObjectURL=url=>{active.delete(url);revoke(url);};});await page.goto(board);
  const toggle=page.getByRole('switch',{name:'卡片预览',exact:true});
  await expect(toggle).toHaveAttribute('aria-checked','false');await expect(page.locator('.card-jira-group')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'打开卡片：按需预览',exact:true})).toBeVisible();
@@ -14,10 +14,11 @@ test('home previews default off, detail loads only its card, toggle persists and
  await page.getByRole('button',{name:'打开卡片：按需预览',exact:true}).click();
  await expect(page.getByRole('dialog').locator('.safe-markdown')).toContainText('模拟消息');
  expect((await inspect(jc)).requests.slice(beforeJ).some(r=>r.path.includes('DEMO-2'))).toBe(false);
- await page.getByRole('button',{name:'关闭详情'}).click();await expect(page.locator('.preview')).toHaveCount(0);
+ await expect(page.getByRole('dialog').locator('img.avatar')).toBeVisible();expect(await page.evaluate(()=>Reflect.get(window,'__activeAvatarUrls').size)).toBeGreaterThan(0);
+ await page.getByRole('button',{name:'关闭详情'}).click();await expect(page.locator('.preview')).toHaveCount(0);await expect.poll(()=>page.evaluate(()=>Reflect.get(window,'__activeAvatarUrls').size)).toBe(0);
  await toggle.click();await expect(toggle).toHaveAttribute('aria-checked','true');await expect(page.locator('main .safe-markdown').first()).toBeVisible();
  await page.reload();await expect(toggle).toHaveAttribute('aria-checked','true');
- await toggle.click();await expect(page.locator('.preview')).toHaveCount(0);await expect(page.locator('img.avatar')).toHaveCount(0);
+ await toggle.click();await expect(page.locator('.preview')).toHaveCount(0);await expect(page.locator('img.avatar')).toHaveCount(0);await expect.poll(()=>page.evaluate(()=>Reflect.get(window,'__activeAvatarUrls').size)).toBe(0);
  await page.reload();await expect(toggle).toHaveAttribute('aria-checked','false');
 });
 

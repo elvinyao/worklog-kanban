@@ -19,6 +19,7 @@ test('shared editing, two-page conflicts, links, and atomic column migration wor
  const context=await browser.newContext({locale:'zh-CN'});const page=await context.newPage();const other=await context.newPage();
  await page.goto(board);await expect(page.getByRole('heading',{name:'待处理',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'新建卡片',exact:true}).click();
+ await page.getByRole('combobox',{name:'所在列',exact:true}).selectOption({label:'待处理'});
  await page.getByLabel('共享标题').fill('协作验收卡片');await page.getByLabel('共享笔记').fill('保留的纯文本笔记');
  await page.getByRole('button',{name:'创建卡片',exact:true}).click();
  await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -59,10 +60,10 @@ test('shared editing, two-page conflicts, links, and atomic column migration wor
  await page.getByRole('button',{name:'关闭详情'}).click();
  await expect(page.getByText('有未保存的修改。')).toBeVisible();await page.getByRole('button',{name:'继续编辑'}).click();
  await expect(page.getByLabel('共享笔记')).toHaveValue('未保存');await page.getByRole('button',{name:'关闭详情'}).click();await page.getByRole('button',{name:'放弃修改并关闭'}).click();
- await page.getByRole('button',{name:'管理列'}).click();await page.getByLabel('新列名称').fill('验收列');await page.getByRole('button',{name:'添加列',exact:true}).click();
- await expect(page.getByLabel('列名称 7',{exact:true})).toHaveValue('验收列');
- await page.getByLabel('列名称 7',{exact:true}).fill('归档');await page.getByRole('button',{name:'保存列名 7'}).click();
- await page.getByRole('button',{name:'上移列 7'}).click();await expect(page.getByLabel('列名称 6',{exact:true})).toHaveValue('归档');
+ await page.getByRole('button',{name:'管理列'}).click();const columnNumber=await page.locator('.column-editor').count()+1;await page.getByLabel('新列名称').fill('验收列');await page.getByRole('button',{name:'添加列',exact:true}).click();
+ await expect(page.getByLabel('列名称 '+columnNumber,{exact:true})).toHaveValue('验收列');
+ await page.getByLabel('列名称 '+columnNumber,{exact:true}).fill('归档');await page.getByRole('button',{name:'保存列名 '+columnNumber,exact:true}).click();
+ await page.getByRole('button',{name:'上移列 '+columnNumber,exact:true}).click();await expect(page.getByLabel('列名称 '+(columnNumber-1),{exact:true})).toHaveValue('归档');
  await page.getByLabel('删除待处理后移至').selectOption({label:'归档'});await page.getByRole('button',{name:'迁移卡片并删除待处理'}).click();
  await page.getByRole('button',{name:'关闭列管理'}).click();
  await expect(page.getByRole('region',{name:'归档'}).getByRole('button',{name:'打开卡片：协作验收卡片'})).toBeVisible();
