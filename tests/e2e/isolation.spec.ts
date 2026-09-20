@@ -1,6 +1,6 @@
 import { readFile,readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { test,expect,board,jira,mm,login,inspect,profiles,chooseLanguage } from './fixtures';
+import { test,expect,board,jira,mm,login,inspect,profiles,chooseLanguage,enablePreviews } from './fixtures';
 import { seedCard,sharedRead } from './shared-helpers';
 const marker='ALICE_ONLY_MARKER';
 test('private synthetic content stays out of Bob, shared responses, SQLite, events, logs and storage',async({alice,bob})=>{
@@ -41,7 +41,7 @@ test('real history navigation clears private state and reads again on return',as
  const control=await login(alice,jira,'alice');await seedCard(alice,'历史恢复验收','DEMO-2');const page=await alice.newPage();
  await page.addInitScript(()=>{Object.assign(window,{__restored:false});addEventListener('pageshow',event=>{Object.assign(window,{__restored:event.persisted});});});
  const cdp=await alice.newCDPSession(page);await cdp.send('Page.enable');const reasons:string[]=[];cdp.on('Page.backForwardCacheNotUsed',event=>{for(const item of event.notRestoredExplanations)reasons.push(item.reason);});
- await page.goto(board);await expect(page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：历史恢复验收',exact:true})}).getByText(new RegExp(marker))).toBeVisible();
+ await page.goto(board);await enablePreviews(page);await expect(page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：历史恢复验收',exact:true})}).getByText(new RegExp(marker))).toBeVisible();
  await page.goto(board+'/probe/');const before=(await inspect(control)).requests.filter(request=>request.path.includes('/issue/DEMO-2')).length;await page.goBack();
  await expect(page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：历史恢复验收',exact:true})}).getByText(new RegExp(marker))).toBeVisible();expect((await inspect(control)).requests.filter(request=>request.path.includes('/issue/DEMO-2')).length).toBeGreaterThan(before);
  console.log('History evidence:',JSON.stringify({persisted:await page.evaluate(()=>Reflect.get(window,'__restored')),notRestoredReasons:[...new Set(reasons)]}));

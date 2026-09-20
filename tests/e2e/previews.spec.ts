@@ -1,4 +1,4 @@
-import { test,expect,board,jira,mm,login,inspect,fault } from './fixtures';
+import { test,expect,board,jira,mm,login,inspect,fault,enablePreviews } from './fixtures';
 import type { Page } from '@playwright/test';
 import { seedCard } from './shared-helpers';
 async function create(page:Page,title:string,jiraKey:string,posts:string[]=[]){
@@ -9,7 +9,7 @@ async function create(page:Page,title:string,jiraKey:string,posts:string[]=[]){
 test('personal previews are deduplicated, safe, and separate from shared title and notes',async({alice,bob})=>{
  const control=await login(alice,jira,'alice');await login(alice,mm,'alice');await login(bob,jira,'bob');await login(bob,mm,'bob');
  const before=(await inspect(control)).requests.filter(request=>request.path.includes('/issue/DEMO-1')).length;
- const page=await alice.newPage();let untrustedRequests=0;page.on('request',request=>{if(request.url().includes('untrusted.localhost'))untrustedRequests++;});await page.goto(board);await expect(page.getByTestId('preview-connection')).toHaveText('个人预览已连接');
+ const page=await alice.newPage();let untrustedRequests=0;page.on('request',request=>{if(request.url().includes('untrusted.localhost'))untrustedRequests++;});await page.goto(board);await enablePreviews(page);await expect(page.getByTestId('preview-connection')).toHaveText('个人预览已连接');
  await create(page,'预览验收一','DEMO-1',['a'.repeat(26),'x'.repeat(26),'l'.repeat(26)]);
  const card=page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：预览验收一',exact:true})});
  await expect(card.getByText('验证个人预览与共享工作记录',{exact:true})).toBeVisible();
@@ -30,7 +30,7 @@ test('personal previews are deduplicated, safe, and separate from shared title a
  const stable=(await inspect(control)).requests.length;await new Promise(resolve=>setTimeout(resolve,500));expect((await inspect(control)).requests.length).toBe(stable);
 });
 test('temporary failure marks old content, login loss clears it, and refresh respects rate limits',async({alice})=>{
- const control=await login(alice,jira,'alice');const page=await alice.newPage();await page.goto(board);
+ const control=await login(alice,jira,'alice');const page=await alice.newPage();await page.goto(board);await enablePreviews(page);
  await create(page,'故障刷新卡片','DEMO-3');const card=page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：故障刷新卡片',exact:true})});
  await expect(card.getByText('没有评论和担当者的模拟票据',{exact:true})).toBeVisible();
  await fault(control,'connection');await card.getByRole('button',{name:'刷新个人预览'}).click();await expect(card.getByText('旧内容',{exact:true})).toBeVisible();await expect(card.getByText('没有评论和担当者的模拟票据',{exact:true})).toBeVisible();
@@ -42,7 +42,7 @@ test('temporary failure marks old content, login loss clears it, and refresh res
 test('changing and unbinding a slow association never displays its old personal response',async({alice})=>{
  const control=await login(alice,jira,'alice');await seedCard(alice,'切换关联验收','DEMO-2');
  const status=await control.evaluate(async()=>{const response=await fetch('fault',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fault:'delay',delay_ms:700,page_size:7})});return response.status;});expect(status).toBe(200);
- const page=await alice.newPage();await page.goto(board);await expect.poll(async()=>(await inspect(control)).requests.filter(request=>request.path.includes('/issue/DEMO-2')).length).toBeGreaterThan(0);
+ const page=await alice.newPage();await page.goto(board);await enablePreviews(page);await expect.poll(async()=>(await inspect(control)).requests.filter(request=>request.path.includes('/issue/DEMO-2')).length).toBeGreaterThan(0);
  await page.getByRole('button',{name:'打开卡片：切换关联验收',exact:true}).click();await page.getByLabel('共享笔记').fill('切换保留笔记');await page.getByLabel('Jira 编号或链接').fill('DEMO-3');await page.getByRole('button',{name:'保存修改',exact:true}).click();
  const card=page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：切换关联验收',exact:true})});await expect(card.getByText('没有评论和担当者的模拟票据',{exact:true})).toBeVisible();await expect(card.getByText(/ALICE_ONLY_MARKER/)).toHaveCount(0);
  await card.getByRole('button',{name:'打开卡片：切换关联验收',exact:true}).click();await expect(page.getByLabel('共享笔记')).toHaveValue('切换保留笔记');await page.getByRole('button',{name:'移除 Jira 票据 1 及其消息关联'}).click();await page.getByRole('button',{name:'保存修改',exact:true}).click();
@@ -63,7 +63,7 @@ test('page and StrictMode cleanup leave one connection, clear private content, p
   const urls=new Set<string>();const make=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);
   URL.createObjectURL=(blob:Blob|MediaSource)=>{const url=make(blob);urls.add(url);state.blobs=urls.size;return url;};URL.revokeObjectURL=(url:string)=>{urls.delete(url);state.blobs=urls.size;revoke(url);};
  });
- await page.goto(board);await expect(page.getByTestId('preview-connection')).toHaveText('个人预览已连接');
+ await page.goto(board);await enablePreviews(page);await expect(page.getByTestId('preview-connection')).toHaveText('个人预览已连接');
  await page.getByRole('button',{name:'打开卡片：生命周期验收',exact:true}).click();await expect(page.getByRole('dialog').getByText('ALICE_ONLY_MARKER：最新的受限模拟评论',{exact:true})).toBeVisible();
  await expect(page.getByRole('dialog').locator('.safe-markdown strong').filter({hasText:'模拟消息'})).toBeVisible();
  await page.getByLabel('共享笔记').fill('生命周期草稿');

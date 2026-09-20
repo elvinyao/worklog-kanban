@@ -6,6 +6,7 @@ import type {MessageKey} from '../i18n/core';
 import { Modal } from './Modal';
 import { JiraLinksEditor } from './JiraLinksEditor';
 import { CardLinks } from './CardLinks';
+import {PreviewToolbar} from './PreviewProvider';
 
 export function CardDialog({card,columnId,snapshot,accept,reload,close}:{card:Card|undefined;columnId:string;snapshot:Snapshot;accept:(value:Snapshot)=>void;reload:()=>void;close:()=>void}){
  const {t,column:columnLabel}=useLanguage();
@@ -32,6 +33,7 @@ export function CardDialog({card,columnId,snapshot,accept,reload,close}:{card:Ca
   <div className="dialog-head"><div><span className="eyebrow">{t('card.eyebrow')}</span><h2>{t(card?'card.details':'card.new')}</h2></div><button className="icon" aria-label={t("card.close")} onClick={requestClose} disabled={saving}>×</button></div>
   <form onSubmit={event=>{event.preventDefault();void save();}}>
    <div className="dialog-content">
+    <PreviewToolbar/>
     <p className="hint">{t("card.sharedFieldsHint")}</p>
     <fieldset disabled={saving}>
      {!card&&<><label>{t("card.column")}<select value={targetExists?target:''} onChange={event=>setTarget(event.target.value)}><option value="" disabled>{t("card.chooseColumn")}</option>{snapshot.columns.map(column=><option key={column.id} value={column.id}>{columnLabel(column)}</option>)}</select></label>{!targetExists&&<p className="notice">{t("card.columnDeleted")}</p>}</>}

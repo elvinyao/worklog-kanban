@@ -6,7 +6,7 @@ import {useLanguage} from '../i18n';
 import type {MessageKey} from '../i18n/core';
 import { Preview } from './Preview';
 export interface FocusRequest {target:BoardFocus;sequence:number}
-export function Board({snapshot,open,create,accept,reload,focusRequest}:{snapshot:Snapshot;open:(card:Card)=>void;create:(columnId:string)=>void;accept:(value:Snapshot)=>void;reload:()=>void;focusRequest:FocusRequest|null}){
+export function Board({snapshot,open,create,accept,reload,focusRequest,showPreviews=false}:{snapshot:Snapshot;open:(card:Card)=>void;create:(columnId:string)=>void;accept:(value:Snapshot)=>void;reload:()=>void;focusRequest:FocusRequest|null;showPreviews?:boolean}){
  const {t,column:columnLabel}=useLanguage();
  const [selected,setSelected]=useState<BoardFocus|null>(null);const selectedRef=useRef<BoardFocus|null>(null);
  const [pending,setPending]=useState<Move|null>(null);const busy=useRef(false);const [error,setError]=useState<MessageKey|''>('');
@@ -59,9 +59,9 @@ export function Board({snapshot,open,create,accept,reload,focusRequest}:{snapsho
     <button ref={node=>{if(node)cards.current.set(card.id,node);else cards.current.delete(card.id);}} data-nav-card={card.id} className="card-open" aria-label={t('card.open',{title:card.title})} onClick={()=>{if(!busy.current&&!dragged.current)open(card);}}>
      <span className="card-title">{card.title}</span>
      {card.notes&&<span className="card-notes">{card.notes}</span>}
-     <span className="card-tags">{card.jiraLinks.map(jira=><span className="tag" key={jira.id}>{jira.key}{jira.mattermostLinks.length>0&&` · ${jira.mattermostLinks.length}`}</span>)}{card.unassignedMattermostLinks.length>0&&<span className="tag neutral">{t('card.unassignedMessages')} · {card.unassignedMattermostLinks.length}</span>}</span>
+     <span className="card-tags">{card.jiraLinks.length>0&&<span className="tag">{card.jiraLinks.length} Jira</span>}{card.jiraLinks.some(j=>j.mattermostLinks.length>0)&&<span className="tag neutral">{t('card.messageCount',{count:card.jiraLinks.reduce((n,j)=>n+j.mattermostLinks.length,0)})}</span>}{card.unassignedMattermostLinks.length>0&&<span className="tag neutral">{t('card.unassignedMessages')} · {card.unassignedMattermostLinks.length}</span>}</span>
     </button>
-    {card.jiraLinks.map(jira=><section className="card-jira-group" role="group" aria-label={jira.key} key={jira.id}>
+    {showPreviews&&card.jiraLinks.map(jira=><section className="card-jira-group" role="group" aria-label={jira.key} key={jira.id}>
      <Preview resource={{kind:'jira',id:jira.key,url:jira.url}} compact/>
      {jira.mattermostLinks.length>0&&<div className="card-jira-messages">{jira.mattermostLinks.map(link=><Preview key={link.id} resource={{kind:'mattermost',id:link.postId,team:link.team,url:link.url}} compact/>)}</div>}
     </section>)}

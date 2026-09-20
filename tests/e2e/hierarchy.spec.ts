@@ -1,9 +1,9 @@
 import {execFileSync} from 'node:child_process';
-import {test,expect,board,jira,mm,login,inspect,chooseLanguage} from './fixtures';
+import {test,expect,board,jira,mm,login,inspect,chooseLanguage,enablePreviews} from './fixtures';
 import {seedCard,sharedRead,sharedWrite} from './shared-helpers';
 
 test('multiple Jira groups retain message ownership, reorder and move messages, and deduplicate previews',async({alice})=>{
- const jiraControl=await login(alice,jira,'alice');const mmControl=await login(alice,mm,'alice');const before=(await inspect(mmControl)).requests.filter(r=>r.path.endsWith('/posts/'+'a'.repeat(26))).length;const page=await alice.newPage();await page.goto(board);
+ const jiraControl=await login(alice,jira,'alice');const mmControl=await login(alice,mm,'alice');const before=(await inspect(mmControl)).requests.filter(r=>r.path.endsWith('/posts/'+'a'.repeat(26))).length;const page=await alice.newPage();await page.goto(board);await enablePreviews(page);
  await page.getByRole('button',{name:'新建卡片',exact:true}).click();await page.getByLabel('共享标题').fill('多票据验收');await page.getByLabel('共享笔记').fill('Shared hierarchy notes');
  await expect(page.getByRole('button',{name:'添加消息关联'})).toHaveCount(0);
  for(const [index,key] of ['DEMO-1','DEMO-2'].entries()){

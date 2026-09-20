@@ -1,0 +1,142 @@
+<div id="worklog-archive-design" aria-label="Worklog 预览与归档交互设计">
+  <style>
+    #worklog-archive-design{--wl-page:light-dark(#f7f8f4,#19211c);--wl-surface:light-dark(#fff,#232d26);--wl-ink:light-dark(#283529,#e4eadf);--wl-muted:light-dark(#667363,#a6b5a4);--wl-line:light-dark(#dce5d6,#455441);--wl-tint:light-dark(#edf1e7,#2c382d);--wl-accent:light-dark(#44613c,#afc99d);--wl-on:light-dark(#fff,#1a2918);background:var(--wl-page);color:var(--wl-ink);font:14px/1.5 system-ui,-apple-system,sans-serif;border-radius:12px;overflow:clip;position:relative;min-height:570px}
+    #worklog-archive-design *{box-sizing:border-box}
+    #worklog-archive-design button,#worklog-archive-design input,#worklog-archive-design select{font:inherit;color:inherit}
+    #worklog-archive-design button{border:1px solid var(--wl-line);background:var(--wl-surface);padding:8px 12px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;gap:7px;max-width:100%;white-space:normal}
+    #worklog-archive-design button:disabled{opacity:.5;cursor:default}
+    #worklog-archive-design .wl-primary{background:var(--wl-accent);color:var(--wl-on);border-color:var(--wl-accent)}
+    #worklog-archive-design .wl-quiet{border-color:transparent;background:transparent}
+    #worklog-archive-design .wl-top{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:var(--wl-surface);border-bottom:1px solid var(--wl-line);gap:16px;flex-wrap:wrap}
+    #worklog-archive-design .wl-brand{display:flex;align-items:center;gap:12px;font-size:19px;font-weight:600}
+    #worklog-archive-design .wl-mark{width:34px;height:34px;display:grid;place-content:center;border-radius:10px;background:var(--wl-accent);color:var(--wl-on);font-size:23px}
+    #worklog-archive-design .wl-small{font-size:12px;color:var(--wl-muted)}
+    #worklog-archive-design .wl-nav{display:flex;gap:6px;padding:14px 24px 0;flex-wrap:wrap}
+    #worklog-archive-design .wl-nav button{border-color:transparent;background:transparent}
+    #worklog-archive-design .wl-nav button[aria-current="page"]{background:var(--wl-tint);color:var(--wl-accent);font-weight:600}
+    #worklog-archive-design .wl-main{padding:22px 24px 28px}
+    #worklog-archive-design .wl-toolbar{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap}
+    #worklog-archive-design .wl-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    #worklog-archive-design h2{font-size:23px;line-height:1.25;margin:0 0 6px;font-weight:600}
+    #worklog-archive-design h3{font-size:16px;margin:0;font-weight:600}
+    #worklog-archive-design p{margin:7px 0}
+    #worklog-archive-design .wl-switch{background:transparent;border:0;padding:8px 5px}
+    #worklog-archive-design .wl-track{display:inline-flex;align-items:center;width:34px;height:20px;padding:3px;background:var(--wl-line);border-radius:20px}
+    #worklog-archive-design .wl-knob{height:14px;width:14px;border-radius:50%;background:var(--wl-surface)}
+    #worklog-archive-design [aria-checked="true"] .wl-track{background:var(--wl-accent);justify-content:flex-end}
+    #worklog-archive-design [aria-checked="true"] .wl-knob{background:var(--wl-on)}
+    #worklog-archive-design .wl-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;align-items:start}
+    #worklog-archive-design .wl-col{padding:12px;background:var(--wl-tint);border-radius:10px;min-width:0}
+    #worklog-archive-design .wl-col-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    #worklog-archive-design .wl-count{font-size:12px;color:var(--wl-muted);margin-left:8px}
+    #worklog-archive-design .wl-task{background:var(--wl-surface);border:1px solid var(--wl-line);border-radius:8px;margin-bottom:10px;padding:12px;overflow-wrap:anywhere}
+    #worklog-archive-design .wl-task:last-child{margin-bottom:0}
+    #worklog-archive-design .wl-task-open{display:block;width:100%;padding:0;text-align:left;background:transparent;border:0;font-weight:500;line-height:1.5}
+    #worklog-archive-design .wl-note{color:var(--wl-muted);font-size:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    #worklog-archive-design .wl-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;font-size:11px;color:var(--wl-accent)}
+    #worklog-archive-design .wl-tag{display:inline-block;background:var(--wl-tint);border-radius:4px;padding:2px 6px}
+    #worklog-archive-design .wl-preview{border:1px solid var(--wl-line);border-radius:7px;background:var(--wl-page);padding:9px;margin-top:10px;font-size:12px}
+    #worklog-archive-design .wl-preview-head{display:flex;gap:8px;justify-content:space-between;font-weight:500}
+    #worklog-archive-design .wl-msg{border-top:1px solid var(--wl-line);padding-top:7px;margin-top:8px}
+    #worklog-archive-design .wl-empty{color:var(--wl-muted);font-size:12px;padding:16px 3px;text-align:center}
+    #worklog-archive-design .wl-info{padding:10px 12px;background:var(--wl-tint);border-radius:7px;margin-bottom:16px;color:var(--wl-muted);font-size:12px}
+    #worklog-archive-design .wl-list{border-top:1px solid var(--wl-line)}
+    #worklog-archive-design .wl-list-row{display:grid;grid-template-columns:minmax(0,1fr) 140px 155px auto;gap:16px;align-items:center;padding:18px 2px;border-bottom:1px solid var(--wl-line)}
+    #worklog-archive-design .wl-list-title{padding:0;border:0;background:transparent;justify-content:start;text-align:left;font-weight:500}
+    #worklog-archive-design .wl-field{display:grid;gap:6px;margin:14px 0;font-size:13px}
+    #worklog-archive-design input[type="text"],#worklog-archive-design select{border:1px solid var(--wl-line);border-radius:7px;padding:9px 11px;background:var(--wl-surface);min-width:0;width:100%}
+    #worklog-archive-design .wl-search{max-width:340px;margin:0 0 18px}
+    #worklog-archive-design .wl-dialog{position:absolute;inset:0;z-index:5;padding:45px 20px;background:light-dark(#263d2570,#0a170bc9);display:flex;align-items:flex-start;justify-content:center}
+    #worklog-archive-design .wl-dialog[hidden]{display:none}
+    #worklog-archive-design .wl-panel{max-width:530px;width:100%;background:var(--wl-surface);color:var(--wl-ink);border:1px solid var(--wl-line);border-radius:13px;padding:24px;box-shadow:0 10px 35px #0002}
+    #worklog-archive-design .wl-dialog-heading{display:flex;justify-content:space-between;align-items:start;gap:10px}
+    #worklog-archive-design .wl-panel h2{font-size:21px}
+    #worklog-archive-design .wl-select-row{display:flex;align-items:start;gap:10px;padding:9px 0;border-bottom:1px solid var(--wl-line);font-size:13px}
+    #worklog-archive-design .wl-select-row input{margin:4px 0 0;accent-color:var(--wl-accent)}
+    #worklog-archive-design .wl-dialog-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap}
+    #worklog-archive-design .wl-toast{margin:0 24px 18px;padding:10px 12px;background:var(--wl-tint);border-radius:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+    #worklog-archive-design .wl-toast:empty{display:none}
+    #worklog-archive-design .wl-foot{padding:12px 24px;border-top:1px solid var(--wl-line);color:var(--wl-muted);font-size:11px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    #worklog-archive-design[data-density="relaxed"] .wl-task{padding:18px;margin-bottom:14px}
+    @media(max-width:720px){#worklog-archive-design .wl-list-row{grid-template-columns:minmax(0,1fr) auto;gap:8px}#worklog-archive-design .wl-list-meta{grid-column:1}#worklog-archive-design .wl-list-actions{grid-column:2;grid-row:1 / span 3}#worklog-archive-design .wl-toolbar{align-items:flex-start}}
+    @media(max-width:520px){#worklog-archive-design .wl-columns{grid-template-columns:minmax(0,1fr)}#worklog-archive-design .wl-top,#worklog-archive-design .wl-main{padding:16px}#worklog-archive-design .wl-nav{padding:12px 16px 0}#worklog-archive-design .wl-dialog{padding:20px 10px}#worklog-archive-design .wl-panel{padding:18px}#worklog-archive-design .wl-actions{width:100%}#worklog-archive-design input[type="text"],#worklog-archive-design select{font-size:16px}}
+    @media(pointer:coarse){#worklog-archive-design button{min-height:44px}#worklog-archive-design .wl-select-row{min-height:44px}}
+  </style>
+  <header class="wl-top"><div class="wl-brand"><span class="wl-mark">w.</span>Worklog</div><span class="wl-small">交互设计 · 示例数据</span></header>
+  <nav class="wl-nav" aria-label="看板导航"><button type="button" data-action="current">Current</button><button type="button" data-action="archives">Archives <span data-archive-count></span></button></nav>
+  <div class="wl-main"></div>
+  <div class="wl-toast" role="status" aria-live="polite"></div>
+  <footer class="wl-foot"><span>共享工作记录 · 个人预览仅自己可见</span><span>演示采用三列工作流</span></footer>
+  <div class="wl-dialog" hidden><div class="wl-panel" role="dialog" aria-modal="true" aria-labelledby="wl-dialog-title"></div></div>
+  <script>
+  (()=>{
+    const root=document.getElementById('worklog-archive-design');
+    const main=root.querySelector('.wl-main'),overlay=root.querySelector('.wl-dialog'),panel=root.querySelector('.wl-panel'),toast=root.querySelector('.wl-toast');
+    const cols=[{id:'todo',name:'待办'},{id:'doing',name:'进行中'},{id:'done',name:'已完成'}];
+    const seed=[
+      {id:'a',col:'todo',title:'整理下一阶段的接口变更',note:'收集依赖与待确认项。',jira:['DEMO-12'],messages:2},
+      {id:'b',col:'todo',title:'补充验收场景',note:'重点覆盖多用户同时操作。',jira:['DEMO-14'],messages:1},
+      {id:'c',col:'doing',title:'接入消息关联',note:'每张 Jira 下保留独立的讨论上下文。',jira:['DEMO-21','DEMO-22'],messages:3},
+      {id:'d',col:'doing',title:'核对测试环境配置',note:'确认站点地址与登录方式。',jira:['DEMO-25'],messages:1},
+      {id:'e',col:'done',title:'修复预览意外消失',note:'已完成页面闲置和重新连接验证。',jira:['DEMO-31'],messages:2},
+      {id:'f',col:'done',title:'添加三语言切换',note:'支持中文、English、日本語。',jira:['DEMO-32'],messages:1},
+      {id:'g',col:'done',title:'完成一键启动流程',note:'已验证更新和数据保留。',jira:['DEMO-33'],messages:1}
+    ];
+    const old=[{id:'past1',name:'09.13 · 第一阶段完成',description:'模拟环境与基础工作流',date:'2026-09-13 18:20',cards:[{id:'h',col:'done',title:'建立模拟环境',note:'Jira 与 Mattermost 的基础场景已验证。',jira:['DEMO-5'],messages:2}]},{id:'past2',name:'09.06 · 初始看板',description:'任务创建与列管理',date:'2026-09-06 16:10',cards:[{id:'i',col:'done',title:'完成共享看板',note:'支持卡片与工作流维护。',jira:['DEMO-2'],messages:1}]}];
+    const state={view:'current',previews:false,current:seed,archives:old,archiveId:null,query:'',restored:{}};
+    const design={density:'compact',tags:'counts'};
+    const decorate=()=>root.querySelectorAll('button').forEach(button=>button.classList.add('cursor-interaction'));
+    new MutationObserver(decorate).observe(root,{childList:true,subtree:true});
+    let dialog=null,returnFocus=null;
+    const esc=value=>String(value).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+    function load(saved){const p=saved?.privateContent;if(p?.version===1){state.view=['current','archives','archive'].includes(p.view)?p.view:'current';state.previews=!!p.previews;state.archiveId=p.archiveId||null;state.query=typeof p.query==='string'?p.query:'';if(Array.isArray(p.current)&&Array.isArray(p.archives)){state.current=p.current;state.archives=p.archives;state.restored=p.restored||{};}}const m=saved?.modelContent;if(m?.density==='compact'||m?.density==='relaxed')design.density=m.density;if(m?.tags==='counts'||m?.tags==='keys')design.tags=m.tags;}
+    function save(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{archiveScope:'completedOnly',density:design.density,tags:design.tags},privateContent:{version:1,...state}}).catch(()=>{});}
+    load(window.openai?.widgetState);
+    const archive=()=>state.archives.find(a=>a.id===state.archiveId);
+    const previewSwitch=()=>`<button type="button" class="wl-switch" role="switch" aria-label="卡片预览" aria-checked="${state.previews}" data-action="preview"><span class="wl-track" aria-hidden="true"><span class="wl-knob"></span></span>卡片预览 <span class="wl-small">${state.previews?'开':'关'}</span></button>`;
+    function previews(c){return c.jira.map((key,i)=>`<div class="wl-preview"><div class="wl-preview-head"><span>${esc(key)}</span><span class="wl-small">仅自己可见</span></div><p>${esc(c.title)}</p><span class="wl-tag">${c.col==='done'?'Done':'In progress'}</span>${Array.from({length:Math.floor(c.messages/c.jira.length)+(i<c.messages%c.jira.length?1:0)},(_,j)=>`<div class="wl-msg"><span class="wl-small">${j?'Ken':'Alice'} · team-dev · 10:${j?'35':'20'}</span><p>${j?'相关场景也已核对，记录见票据。':'这项工作已有更新，关联讨论保留在这里。'}</p></div>`).join('')}</div>`).join('');}
+    function task(c,archived){return `<article class="wl-task"><button type="button" class="wl-task-open" data-action="card" data-id="${c.id}" data-archived="${archived}">${esc(c.title)}</button><p class="wl-note">${esc(c.note)}</p><div class="wl-tags">${design.tags==='keys'?c.jira.slice(0,2).map(j=>`<span class="wl-tag">${esc(j)}</span>`).join(''):`<span class="wl-tag">${c.jira.length} Jira</span>`}<span class="wl-tag">${c.messages} 条消息</span></div>${state.previews?previews(c):''}</article>`;}
+    function board(cards,archived){return `<div class="wl-columns">${cols.map(c=>{const items=cards.filter(t=>t.col===c.id);return `<section class="wl-col" aria-label="${c.name}"><div class="wl-col-head"><h3>${c.name}<span class="wl-count">${items.length}</span></h3>${c.id==='done'?'<span class="wl-small">完成列</span>':''}</div>${items.length?items.map(t=>task(t,archived)).join(''):`<div class="wl-empty">${archived?'归档时无收录任务':'暂无任务'}</div>`}</section>`;}).join('')}</div>`;}
+    function archiveRows(){const result=state.archives.filter(a=>(a.name+' '+a.description).toLowerCase().includes(state.query.toLowerCase()));root.querySelector('.wl-list').innerHTML=result.length?result.map(a=>`<div class="wl-list-row"><div><button class="wl-list-title" type="button" data-action="open-archive" data-id="${a.id}">${esc(a.name)}</button><p class="wl-small">${esc(a.description)}</p></div><div class="wl-small wl-list-meta">${esc(a.date)}</div><div class="wl-small wl-list-meta">${a.cards.length} 个任务 · ${a.cards.reduce((n,c)=>n+c.jira.length,0)} 个 Jira 关联</div><div class="wl-actions wl-list-actions"><button type="button" data-action="open-archive" data-id="${a.id}">查看</button><button type="button" class="wl-quiet" data-action="rename" data-id="${a.id}">重命名</button></div></div>`).join(''):'<p class="wl-empty">没有匹配的归档</p>';}
+    function render(){
+      root.dataset.density=design.density;
+      for(const b of root.querySelectorAll('.wl-nav button')){if((state.view==='current')===(b.dataset.action==='current'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
+      root.querySelector('[data-archive-count]').textContent='· '+state.archives.length;
+      if(state.view==='archive'&&!archive())state.view='archives';
+      if(state.view==='current'){main.innerHTML=`<div class="wl-toolbar"><div><h2>Current</h2><span class="wl-small">${state.current.length} 个工作任务</span></div><div class="wl-actions">${previewSwitch()}<button type="button" data-action="create-archive" ${state.current.some(c=>c.col==='done')?'':'disabled'}>归档已完成任务</button></div></div>${board(state.current,false)}`;}
+      else if(state.view==='archives'){main.innerHTML=`<div class="wl-toolbar"><div><h2>Archives</h2><span class="wl-small">${state.archives.length} 份归档 · 最新在前</span></div></div><label class="wl-field wl-search">搜索归档<input type="text" data-search placeholder="名称或说明" value="${esc(state.query)}"></label><div class="wl-list"></div>`;archiveRows();}
+      else{const a=archive();main.innerHTML=`<div class="wl-toolbar"><div><button type="button" class="wl-quiet" data-action="archives">← 归档列表</button><h2>${esc(a.name)}</h2><span class="wl-small">${esc(a.date)} · ${a.cards.length} 个任务 · 只读归档</span></div><div class="wl-actions">${previewSwitch()}<button type="button" data-action="restore">恢复任务</button></div></div>${state.previews?'<div class="wl-info">Jira / Mattermost 为源站实时内容，非归档时的历史快照。</div>':''}${board(a.cards,true)}`;}
+    }
+    function openDialog(type,data={}){returnFocus=document.activeElement;dialog={type,...data};overlay.hidden=false;root.querySelector('.wl-top').inert=true;root.querySelector('.wl-nav').inert=true;main.inert=true;toast.inert=true;
+      const close='<button type="button" class="wl-quiet" data-action="close" aria-label="关闭对话框">×</button>';
+      if(type==='archive'){const candidates=state.current.filter(c=>c.col==='done');dialog.selected=new Set(candidates.map(c=>c.id));panel.innerHTML=`<div class="wl-dialog-heading"><div><h2 id="wl-dialog-title">归档已完成任务</h2><p class="wl-small">未完成任务继续留在 Current。</p></div>${close}</div><label class="wl-field">归档名称<input type="text" data-name maxlength="80" value="2026-09-20 · 本周完成"></label><label class="wl-field">说明（选填）<input type="text" data-description maxlength="500" placeholder="例如：本周发布与验证"></label><p class="wl-small">已完成 · ${candidates.length} 个任务</p>${candidates.map(c=>`<label class="wl-select-row"><input type="checkbox" data-choice="${c.id}" checked><span>${esc(c.title)}<br><span class="wl-small">${c.jira.join(' · ')}</span></span></label>`).join('')}<p class="wl-small" data-summary></p><div class="wl-dialog-footer"><button type="button" data-action="close">取消</button><button type="button" class="wl-primary" data-action="confirm-archive"></button></div>`;updateSummary();}
+      else if(type==='restore'){const a=archive();dialog.selected=new Set();panel.innerHTML=`<div class="wl-dialog-heading"><div><h2 id="wl-dialog-title">恢复到 Current</h2><p class="wl-small">创建新卡片，归档记录保留。</p></div>${close}</div>${a.cards.map(c=>{const exists=state.restored[a.id+':'+c.id]&&state.current.some(x=>x.id===state.restored[a.id+':'+c.id]);return `<label class="wl-select-row"><input type="checkbox" data-choice="${c.id}" ${exists?'disabled':''}><span>${esc(c.title)}${exists?'<br><span class="wl-small">已在 Current</span>':''}</span></label>`;}).join('')}<label class="wl-field">目标列<select data-target>${cols.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></label><p class="wl-small" data-summary></p><div class="wl-dialog-footer"><button type="button" data-action="close">取消</button><button type="button" class="wl-primary" data-action="confirm-restore"></button></div>`;updateSummary();}
+      else if(type==='rename'){const a=state.archives.find(x=>x.id===data.id);panel.innerHTML=`<div class="wl-dialog-heading"><h2 id="wl-dialog-title">重命名归档</h2>${close}</div><label class="wl-field">归档名称<input type="text" data-name maxlength="80" value="${esc(a.name)}"></label><label class="wl-field">说明（选填）<input type="text" data-description maxlength="500" value="${esc(a.description)}"></label><div class="wl-dialog-footer"><button type="button" data-action="close">取消</button><button type="button" class="wl-primary" data-action="confirm-rename">保存</button></div>`;}
+      else{const c=data.card;panel.innerHTML=`<div class="wl-dialog-heading"><div><h2 id="wl-dialog-title">${esc(c.title)}</h2><p class="wl-small">${data.archived?'归档内容 · 只读':'任务详情'}</p></div>${close}</div><p>${esc(c.note)}</p><p class="wl-small">个人预览 · 源站实时内容</p>${previews(c)}<div class="wl-dialog-footer"><button type="button" data-action="close">关闭</button></div>`;}
+      root.style.minHeight=Math.max(570,panel.scrollHeight+90)+'px';panel.querySelector('input,button,select')?.focus();}
+    function closeDialog(){overlay.hidden=true;dialog=null;for(const el of [root.querySelector('.wl-top'),root.querySelector('.wl-nav'),main,toast])el.inert=false;root.style.minHeight='570px';if(returnFocus?.isConnected)returnFocus.focus();else root.querySelector('.wl-nav [aria-current="page"]')?.focus();}
+    function updateSummary(){const n=dialog.selected.size;const button=panel.querySelector('.wl-primary');if(dialog.type==='archive'){panel.querySelector('[data-summary]').textContent=`将归档 ${n} 项，Current 保留 ${state.current.length-n} 项。`;button.textContent=`归档 ${n} 项`;button.disabled=!n||!panel.querySelector('[data-name]').value.trim();}else{panel.querySelector('[data-summary]').textContent=`将创建 ${n} 张新卡片，追加到目标列末尾。`;button.textContent=`恢复 ${n} 项到 Current`;button.disabled=!n;}}
+    function notice(text,action,label,id=''){toast.innerHTML=`<span>${esc(text)}</span>${action?`<button type="button" class="wl-quiet" data-action="${action}" data-id="${id}">${label}</button>`:''}`;}
+    root.addEventListener('input',e=>{if(e.target.matches('[data-search]')){state.query=e.target.value;archiveRows();save();}if(dialog?.type==='archive'&&e.target.matches('[data-name]'))updateSummary();if(dialog?.type==='rename'&&e.target.matches('[data-name]'))panel.querySelector('.wl-primary').disabled=!e.target.value.trim();});
+    root.addEventListener('change',e=>{if(e.target.matches('[data-choice]')){if(e.target.checked)dialog.selected.add(e.target.dataset.choice);else dialog.selected.delete(e.target.dataset.choice);updateSummary();}});
+    root.addEventListener('keydown',e=>{if(!dialog)return;if(e.key==='Escape'){e.preventDefault();closeDialog();}if(e.key==='Tab'){const nodes=[...panel.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled)')];const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
+    root.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b||b.disabled)return;const a=b.dataset.action;
+      if(a==='close'){closeDialog();return;}
+      if(a==='card'){const archived=b.dataset.archived==='true';const c=(archived?archive().cards:state.current).find(x=>x.id===b.dataset.id);openDialog('card',{card:c,archived});return;}
+      if(a==='create-archive'){openDialog('archive');return;}
+      if(a==='restore'){openDialog('restore');return;}
+      if(a==='rename'){openDialog('rename',{id:b.dataset.id});return;}
+      if(a==='preview'){state.previews=!state.previews;render();main.querySelector('[data-action="preview"]')?.focus();save();return;}
+      if(a==='current'||a==='archives'){state.view=a;toast.textContent='';}
+      if(a==='open-archive'){state.archiveId=b.dataset.id;state.view='archive';toast.textContent='';}
+      if(a==='confirm-archive'){const cards=state.current.filter(c=>dialog.selected.has(c.id));const id='new-'+Date.now();state.archives.unshift({id,name:panel.querySelector('[data-name]').value.trim(),description:panel.querySelector('[data-description]').value.trim(),date:'2026-09-20 15:30',cards});state.current=state.current.filter(c=>!dialog.selected.has(c.id));closeDialog();notice(`已归档 ${cards.length} 项，未完成任务已保留。`,'open-archive','查看归档',id);}
+      if(a==='confirm-restore'){const ar=archive(),chosen=ar.cards.filter(c=>dialog.selected.has(c.id)),target=panel.querySelector('[data-target]').value;for(const c of chosen){const id='restored-'+Date.now()+'-'+c.id;state.current.push({...c,id,col:target});state.restored[ar.id+':'+c.id]=id;}closeDialog();notice(`已恢复 ${chosen.length} 项，归档记录保留。`,'current','查看 Current');}
+      if(a==='confirm-rename'){const ar=state.archives.find(x=>x.id===dialog.id);ar.name=panel.querySelector('[data-name]').value.trim();ar.description=panel.querySelector('[data-description]').value.trim();closeDialog();notice('归档名称已更新。');}
+      render();save();if(!document.activeElement?.isConnected||document.activeElement===document.body)root.querySelector('.wl-nav [aria-current="page"]')?.focus();
+    });
+    window.addEventListener('openai:set_globals',event=>{const value=event.detail?.globals?.widgetState;if(value){if(dialog)closeDialog();load(value);render();}});
+    render();decorate();
+    if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>{render();save();}});tweak.addSelect(design,'density',{label:'卡片间距',options:[{label:'紧凑（推荐）',value:'compact'},{label:'宽松',value:'relaxed'}]});tweak.addSelect(design,'tags',{label:'卡片关联信息',options:[{label:'只显示数量（推荐）',value:'counts'},{label:'显示 Jira 编号',value:'keys'}]});}
+  })();
+  </script>
+</div>

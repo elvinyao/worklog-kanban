@@ -36,6 +36,7 @@ export async function inspect(page:Page):Promise<{requests:{method:string;path:s
   expect(result.requests.length,'The bounded request history must not overflow during count assertions').toBeLessThan(1000);return result;
 }
 export { expect };
+export async function enablePreviews(page:Page){await page.getByRole('switch',{name:'卡片预览',exact:true}).check();}
 export async function chooseLanguage(page:Page,preference:'auto'|'zh'|'en'|'ja'){
  const group=page.getByRole('group',{name:'语言 / Language / 言語'});
  const button=group.locator('[data-language="'+preference+'"]');

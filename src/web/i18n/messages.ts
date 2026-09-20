@@ -1,6 +1,9 @@
 // Stable English keys; each value is [Simplified Chinese, English, Japanese].
 // UI text only. Shared card data and external content are never translation keys.
 export const messages = {
+  "preview.cardToggle": ["卡片预览", "Card previews", "カードのプレビュー"],
+  "preview.on": ["开", "On", "オン"],
+  "preview.off": ["关", "Off", "オフ"],
   "card.jiraTickets": ["Jira 票据", "Jira tickets", "Jira 課題"],
   "card.hierarchyHint": ["每张 Jira 票据下可添加多条 Mattermost 消息。移除票据会一起移除它的消息关联。", "Add Mattermost messages under each Jira ticket. Removing a ticket also removes its message links.", "Jira 課題ごとに Mattermost メッセージを追加できます。課題を削除すると、そのメッセージの関連付けも削除されます。"],
   "card.addJira": ["添加 Jira 票据", "Add Jira ticket", "Jira 課題を追加"],

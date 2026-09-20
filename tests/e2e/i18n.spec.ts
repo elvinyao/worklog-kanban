@@ -1,4 +1,4 @@
-import {test,expect,board,jira,mm,login,inspect,chooseLanguage} from './fixtures';
+import {test,expect,board,jira,mm,login,inspect,chooseLanguage,enablePreviews} from './fixtures';
 import {seedCard,sharedRead} from './shared-helpers';
 import {columnName,messages,translate,type MessageKey} from '../../src/web/i18n/core';
 const language='语言 / Language / 言語';
@@ -69,7 +69,7 @@ test('denied browser storage does not block automatic or manual selection',async
 
 test('language changes preserve personal content without re-reading the source',async({alice})=>{
  const control=await login(alice,jira,'alice');await seedCard(alice,'多语言个人预览','DEMO-2');
- const page=await alice.newPage();await page.goto(board);await page.getByRole('button',{name:'打开卡片：多语言个人预览',exact:true}).click();
+ const page=await alice.newPage();await page.goto(board);await enablePreviews(page);await page.getByRole('button',{name:'打开卡片：多语言个人预览',exact:true}).click();
  const dialog=page.getByRole('dialog');await expect(dialog.getByText('ALICE_ONLY_MARKER：最新的受限模拟评论',{exact:true})).toBeVisible();
  const count=()=>inspect(control).then(value=>value.requests.filter(item=>item.path.includes('/issue/DEMO-2')).length);const before=await count();
  await dialog.getByRole('button',{name:'关闭详情',exact:true}).click();await chooseLanguage(page,'en');
@@ -78,7 +78,7 @@ test('language changes preserve personal content without re-reading the source',
  await dialog.getByRole('button',{name:'Close details',exact:true}).click();await chooseLanguage(page,'ja');
  await page.getByRole('button',{name:'カードを開く：多语言个人预览',exact:true}).click();
  await expect(dialog.getByText('ALICE_ONLY_MARKER：最新的受限模拟评论',{exact:true})).toBeVisible();await expect(dialog.locator('.jira-comment > span')).toContainText('2026/9/18');
- expect(await count()).toBe(before);expect(await page.evaluate(()=>Object.entries(localStorage))).toEqual([['worklog.language','ja']]);
+ expect(await count()).toBe(before);expect(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage)))).toEqual({'worklog.language':'ja','worklog.cardPreviews':'true'});
 });
 
 test('secondary pages inherit language without additional language controls',async({browser})=>{
