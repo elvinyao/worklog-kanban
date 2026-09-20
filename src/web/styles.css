@@ -23,7 +23,7 @@ h3{font-size:14px;margin-bottom:0}
 .board-toolbar h2 span{font-size:12px;font-weight:400;color:#8a948c;margin-left:12px}
 .primary{background:#2f634c;border-color:#2f634c;color:#fff}
 .primary:hover{background:#244e3c}
-.board{padding:0 28px 24px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(190px,1fr);gap:13px;overflow-x:auto;min-height:calc(100vh - 248px);align-items:start}
+.board{padding:0 28px 24px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,1fr);gap:13px;overflow-x:auto;min-height:calc(100vh - 248px);align-items:start}
 .column{border-radius:11px;background:#ebeee7;padding:12px;min-height:350px}
 .column-heading{display:flex;align-items:center;gap:8px;margin-bottom:16px}
 .column-heading h2{font-size:13px;font-weight:650;letter-spacing:.3px}
@@ -91,6 +91,19 @@ input:disabled,textarea:disabled{background:#f3f4f0}
 .preview-toolbar button{font-size:11px;padding:5px 9px;background:transparent}
 .preview{border:1px solid #dfe7dc;border-radius:8px;padding:14px;margin:10px 0;background:#fcfdf9;overflow-wrap:anywhere}
 .preview.compact{margin:0;border:0;border-top:1px dashed #e2e8dd;border-radius:0;padding:10px 12px;font-size:11px}
+.card-jira-group{margin:0 8px 10px;border:1px solid #dce6d8;border-radius:8px;background:#f9fbf7;overflow:hidden}
+.card-jira-group>.preview.compact{border:0;background:transparent;padding:10px}
+.card-jira-messages{padding:0 8px 3px;background:#ffffff80}
+.card-jira-messages>.preview.compact{border:0;border-top:1px solid #e5ece1;padding:10px 2px;background:transparent}
+.card-jira-messages .preview-heading{font-size:11px;margin-bottom:4px}
+.card-jira-messages .message-author{gap:7px;margin:6px 0}
+.card-jira-messages .message-author>div{min-width:0}
+.card-jira-messages .avatar{width:24px;height:24px}
+.card-jira-messages .message-author strong{font-size:11px}
+.card-jira-messages .message-author span{font-size:9px}
+.card-jira-messages .safe-markdown{font-size:11px;line-height:1.6;max-height:none;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.card-jira-messages .safe-markdown :is(p,ul,ol,blockquote,pre){margin-top:0;margin-bottom:0}
+.card-jira-messages .preview-footer{font-size:9px;margin-top:7px}
 .preview-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:600;margin-bottom:8px}
 .preview-heading small{font-size:9px;font-weight:400;color:#939e8b;white-space:nowrap}
 .preview-heading button{border:0;background:transparent;font-size:19px;line-height:1;padding:3px 5px}

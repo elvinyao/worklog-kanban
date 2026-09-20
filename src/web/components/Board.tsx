@@ -61,7 +61,10 @@ export function Board({snapshot,open,create,accept,reload,focusRequest}:{snapsho
      {card.notes&&<span className="card-notes">{card.notes}</span>}
      <span className="card-tags">{card.jiraLinks.map(jira=><span className="tag" key={jira.id}>{jira.key}{jira.mattermostLinks.length>0&&` · ${jira.mattermostLinks.length}`}</span>)}{card.unassignedMattermostLinks.length>0&&<span className="tag neutral">{t('card.unassignedMessages')} · {card.unassignedMattermostLinks.length}</span>}</span>
     </button>
-    {card.jiraLinks.map(jira=><Preview key={jira.url} resource={{kind:'jira',id:jira.key,url:jira.url}} compact/>)}
+    {card.jiraLinks.map(jira=><section className="card-jira-group" role="group" aria-label={jira.key} key={jira.id}>
+     <Preview resource={{kind:'jira',id:jira.key,url:jira.url}} compact/>
+     {jira.mattermostLinks.length>0&&<div className="card-jira-messages">{jira.mattermostLinks.map(link=><Preview key={link.id} resource={{kind:'mattermost',id:link.postId,team:link.team,url:link.url}} compact/>)}</div>}
+    </section>)}
    </article>)}</div>
    {!layout.cards.some(card=>card.columnId===column.id)&&<p className="empty">{t("board.emptyColumn")}</p>}
    <button className="add-card" onClick={()=>create(column.id)}>＋ {t('card.add')}</button>

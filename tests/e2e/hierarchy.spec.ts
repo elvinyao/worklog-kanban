@@ -12,7 +12,15 @@ test('multiple Jira groups retain message ownership, reorder and move messages, 
    await group.getByRole('button',{name:'添加消息关联'}).click();await group.getByLabel('消息链接 '+(n+1),{exact:true}).fill(mm+'/demo/pl/'+letter.repeat(26));await group.getByLabel('消息说明 '+(n+1),{exact:true}).fill(key+' '+letter);
   }
  }
- await page.getByRole('button',{name:'创建卡片',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await page.getByRole('button',{name:'打开卡片：多票据验收',exact:true}).click();
+ await page.getByRole('button',{name:'创建卡片',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
+ const tile=page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：多票据验收',exact:true})});
+ const groupOne=tile.getByRole('group',{name:'DEMO-1',exact:true}),groupTwo=tile.getByRole('group',{name:'DEMO-2',exact:true});
+ await expect(groupOne.locator('.safe-markdown')).toHaveCount(2);await expect(groupTwo.locator('.safe-markdown')).toHaveCount(1);
+ await expect(groupOne.getByRole('region',{name:'个人 Mattermost 预览 '+'b'.repeat(26),exact:true})).toContainText('ALICE_ONLY_MARKER');
+ await expect(groupTwo.getByRole('region',{name:'个人 Mattermost 预览 '+'b'.repeat(26),exact:true})).toHaveCount(0);
+ await tile.screenshot({path:'.tmp/board-grouped-previews.png'});
+ await page.setViewportSize({width:390,height:844});expect(await tile.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);await tile.screenshot({path:'.tmp/board-grouped-previews-mobile.png'});await page.setViewportSize({width:1280,height:720});
+ await tile.getByRole('button',{name:'打开卡片：多票据验收',exact:true}).click();
  const detail=page.locator('.personal-detail');await expect(detail.getByRole('region',{name:'DEMO-1',exact:true}).locator('.safe-markdown')).toHaveCount(2);await expect(detail.getByRole('region',{name:'DEMO-2',exact:true}).locator('.safe-markdown')).toHaveCount(1);
  expect((await inspect(mmControl)).requests.filter(r=>r.path.endsWith('/posts/'+'a'.repeat(26))).length-before).toBe(1);
  const first=page.getByRole('group',{name:'Jira 票据 1',exact:true});await first.getByRole('button',{name:'上移消息 2'}).click();await first.getByLabel('移动到其他 Jira 票据').first().selectOption({label:jira+'/browse/DEMO-2'});await page.getByRole('button',{name:'上移 Jira 票据 2'}).click();

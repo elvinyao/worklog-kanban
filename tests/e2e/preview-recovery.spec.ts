@@ -34,9 +34,10 @@ test('an idle open page keeps both previews for 45 seconds without source pollin
  const jiraControl=await login(alice,jira,'alice'),mmControl=await login(alice,mm,'alice');
  await seedCard(alice,'闲置预览','DEMO-1',[{url:mm+'/demo/pl/'+'a'.repeat(26),description:''}]);
  const page=await alice.newPage();await page.goto(board);await page.getByRole('button',{name:'打开卡片：闲置预览',exact:true}).click();
- await expect(page.getByRole('dialog').locator('.jira-summary')).toBeVisible();await expect(page.locator('.safe-markdown')).toContainText('模拟消息');
+ const tile=page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：闲置预览',exact:true})});
+ await expect(page.getByRole('dialog').locator('.jira-summary')).toBeVisible();await expect(page.getByRole('dialog').locator('.safe-markdown')).toContainText('模拟消息');await expect(tile.locator('.safe-markdown')).toContainText('模拟消息');
  const before=[(await inspect(jiraControl)).requests.length,(await inspect(mmControl)).requests.length];
  await new Promise(resolve=>setTimeout(resolve,45000));
- await expect(page.getByRole('dialog').locator('.jira-summary')).toBeVisible();await expect(page.locator('.safe-markdown')).toContainText('模拟消息');
+ await expect(page.getByRole('dialog').locator('.jira-summary')).toBeVisible();await expect(page.getByRole('dialog').locator('.safe-markdown')).toContainText('模拟消息');await expect(tile.locator('.safe-markdown')).toContainText('模拟消息');
  expect([(await inspect(jiraControl)).requests.length,(await inspect(mmControl)).requests.length]).toEqual(before);
 });

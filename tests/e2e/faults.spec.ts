@@ -2,7 +2,7 @@ import { test,expect,board,jira,mm,login,fault,inspect } from './fixtures';
 import { seedCard } from './shared-helpers';
 test('authentication, permission and malformed responses clear old content; avatar failure degrades locally',async({alice})=>{
  const control=await login(alice,jira,'alice');const messages=await login(alice,mm,'alice');await seedCard(alice,'故障分类验收','DEMO-3',[{url:mm+'/demo/pl/'+'a'.repeat(26),description:''}]);const page=await alice.newPage();await page.goto(board);
- const card=page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：故障分类验收',exact:true})});
+ const card=page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：故障分类验收',exact:true})}).getByRole('region',{name:'个人 Jira 预览 DEMO-3',exact:true});
  for(const [mode,label] of [['forbidden','无权访问或资源不可用'],['not-found','无权访问或资源不可用'],['html','响应无法读取'],['malformed','响应无法读取'],['login-html','需要登录原系统']] as const){
   await fault(control,'none');await expect(card.getByRole('button',{name:'刷新个人预览'})).toBeEnabled();await card.getByRole('button',{name:'刷新个人预览'}).click();await expect(card.getByText('没有评论和担当者的模拟票据')).toBeVisible();
   await fault(control,mode);await card.getByRole('button',{name:'刷新个人预览'}).click();await expect(card.getByText(label)).toBeVisible();await expect(card.getByText('没有评论和担当者的模拟票据')).toHaveCount(0);
