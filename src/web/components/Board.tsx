@@ -6,7 +6,7 @@ import {useLanguage} from '../i18n';
 import type {MessageKey} from '../i18n/core';
 import { Preview } from './Preview';
 export interface FocusRequest {target:BoardFocus;sequence:number}
-export function Board({snapshot,open,create,accept,reload,focusRequest,showPreviews=false}:{snapshot:Snapshot;open:(card:Card)=>void;create:(columnId:string)=>void;accept:(value:Snapshot)=>void;reload:()=>void;focusRequest:FocusRequest|null;showPreviews?:boolean}){
+export function Board({snapshot,open,create,accept,reload,focusRequest,showPreviews=false,readOnly=false}:{snapshot:Snapshot;open:(card:Card)=>void;create:(columnId:string)=>void;accept:(value:Snapshot)=>void;reload:()=>void;focusRequest:FocusRequest|null;showPreviews?:boolean;readOnly?:boolean}){
  const {t,column:columnLabel}=useLanguage();
  const [selected,setSelected]=useState<BoardFocus|null>(null);const selectedRef=useRef<BoardFocus|null>(null);
  const [pending,setPending]=useState<Move|null>(null);const busy=useRef(false);const [error,setError]=useState<MessageKey|''>('');
@@ -30,7 +30,7 @@ export function Board({snapshot,open,create,accept,reload,focusRequest,showPrevi
  },[snapshot,pending]);
  useEffect(()=>{if(!focusRequest)return;const frame=requestAnimationFrame(()=>{if(!document.querySelector('dialog[open]'))focus(focusRequest.target);});return()=>cancelAnimationFrame(frame);},[focusRequest]);
  async function move(value:Move){
-  if(busy.current)return;const card=snapshot.cards.find(item=>item.id===value.id);if(!card||(card.columnId===value.columnId&&card.position===value.index))return;busy.current=true;setError('');remember({kind:'card',id:value.id});setPending(value);
+  if(readOnly||busy.current)return;const card=snapshot.cards.find(item=>item.id===value.id);if(!card||(card.columnId===value.columnId&&card.position===value.index))return;busy.current=true;setError('');remember({kind:'card',id:value.id});setPending(value);
   try{accept(await api.moveCard(value.id,{targetColumnId:value.columnId,index:value.index,expectedBoardRevision:snapshot.revision}));}
   catch(reason){setError(errorText(reason));reload();}
   finally{busy.current=false;setPending(null);}
@@ -52,9 +52,9 @@ export function Board({snapshot,open,create,accept,reload,focusRequest,showPrevi
   const target=event.target as HTMLElement;const cardId=target.closest<HTMLElement>('[data-card-id]')?.dataset.cardId;if(cardId)remember({kind:'card',id:cardId});else if(target.dataset.navColumn)remember({kind:'column',id:target.dataset.navColumn,index:selectedRef.current?.kind==='column'?selectedRef.current.index:0});
  }}>
   {layout.columns.map(column=><section ref={node=>{if(node)columns.current.set(column.id,node);else columns.current.delete(column.id);}} tabIndex={0} data-nav-column={column.id} data-column-id={column.id} className="column" role="region" aria-label={columnLabel(column)} key={column.id} onDragOver={event=>{if(dragging.current&&!busy.current){event.preventDefault();event.dataTransfer.dropEffect='move';}}} onDrop={event=>drop(event,column.id)}>
-   <header className="column-heading"><h2>{columnLabel(column)}</h2><span className="count">{layout.cards.filter(card=>card.columnId===column.id).length}</span><button className="icon" aria-label={t('card.newInColumn',{column:columnLabel(column)})} onClick={()=>create(column.id)}>＋</button></header>
-   <div className="cards">{layout.cards.filter(card=>card.columnId===column.id).map(card=><article className={'card'+(selected?.kind==='card'&&selected.id===card.id?' selected':'')} key={card.id} data-card-id={card.id} draggable={!pending} onDragStart={event=>{
-    if(busy.current||(event.target as HTMLElement).closest('a,input,textarea,select')){event.preventDefault();return;}dragSource.current=event.currentTarget;dragging.current=card.id;dragged.current=true;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',card.id);focus({kind:'card',id:card.id});
+   <header className="column-heading"><h2>{columnLabel(column)}{column.isDone&&<small className="done-column-label">{t('archive.doneColumn')}</small>}</h2><span className="count">{layout.cards.filter(card=>card.columnId===column.id).length}</span>{!readOnly&&<button className="icon" aria-label={t('card.newInColumn',{column:columnLabel(column)})} onClick={()=>create(column.id)}>＋</button>}</header>
+   <div className="cards">{layout.cards.filter(card=>card.columnId===column.id).map(card=><article className={'card'+(selected?.kind==='card'&&selected.id===card.id?' selected':'')} key={card.id} data-card-id={card.id} draggable={!readOnly&&!pending} onDragStart={event=>{
+    if(readOnly||busy.current||(event.target as HTMLElement).closest('a,input,textarea,select')){event.preventDefault();return;}dragSource.current=event.currentTarget;dragging.current=card.id;dragged.current=true;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',card.id);focus({kind:'card',id:card.id});
    }} onDragEnd={()=>{dragSource.current=null;dragging.current=null;setTimeout(()=>{dragged.current=false;},0);}} onDragOver={event=>{if(dragging.current&&!busy.current){event.preventDefault();event.stopPropagation();event.dataTransfer.dropEffect='move';}}} onDrop={event=>drop(event,card.columnId,card.id)}>
     <button ref={node=>{if(node)cards.current.set(card.id,node);else cards.current.delete(card.id);}} data-nav-card={card.id} className="card-open" aria-label={t('card.open',{title:card.title})} onClick={()=>{if(!busy.current&&!dragged.current)open(card);}}>
      <span className="card-title">{card.title}</span>
@@ -67,7 +67,7 @@ export function Board({snapshot,open,create,accept,reload,focusRequest,showPrevi
     </section>)}
    </article>)}</div>
    {!layout.cards.some(card=>card.columnId===column.id)&&<p className="empty">{t("board.emptyColumn")}</p>}
-   <button className="add-card" onClick={()=>create(column.id)}>＋ {t('card.add')}</button>
+   {!readOnly&&<button className="add-card" onClick={()=>create(column.id)}>＋ {t('card.add')}</button>}
   </section>)}
  </main></>;
 }

@@ -14,6 +14,8 @@ export class ApiError extends Error {
 }
 export const errorText=(error:unknown):MessageKey=>{
   if(error instanceof ApiError){
+    if(error.code==='archive_links_changed')return 'archive.linksChanged';
+    if(error.code==='already_restored')return 'archive.alreadyRestored';
     if(error.status===409)return 'error.sharedConflict';
     if(error.status===404)return 'error.notFound';
     if(error.status===400||error.status===422)return 'error.invalidInput';

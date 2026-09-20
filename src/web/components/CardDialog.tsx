@@ -8,23 +8,28 @@ import { JiraLinksEditor } from './JiraLinksEditor';
 import { CardLinks } from './CardLinks';
 import {PreviewToolbar} from './PreviewProvider';
 
-export function CardDialog({card,columnId,snapshot,accept,reload,close}:{card:Card|undefined;columnId:string;snapshot:Snapshot;accept:(value:Snapshot)=>void;reload:()=>void;close:()=>void}){
+export function CardDialog({card,columnId,snapshot,accept,reload,close,missing=false,onDirtyChange}:{card:Card|undefined;columnId:string;snapshot:Snapshot;accept:(value:Snapshot)=>void;reload:()=>void;close:()=>void;missing?:boolean;onDirtyChange?:(dirty:boolean)=>void}){
  const {t,column:columnLabel}=useLanguage();
  const [draft,setDraft]=useState<Draft>(()=>draftFrom(card??{id:'new',title:'',notes:'',version:0,columnId,position:0,jiraLinks:[],unassignedMattermostLinks:[]}));
  const [saving,setSaving]=useState(false);const [error,setError]=useState<MessageKey|''>('');const [conflict,setConflict]=useState(false);const [closing,setClosing]=useState(false);
  const [target,setTarget]=useState(columnId);
+ const [archiveId,setArchiveId]=useState<string>();const [lookup,setLookup]=useState(0);const [copyVisible,setCopyVisible]=useState(false);const gone=missing||!!archiveId;
+ const dirty=isDirty(draft);
+ useEffect(()=>{onDirtyChange?.(dirty);return()=>onDirtyChange?.(false);},[dirty,onDirtyChange]);
+ useEffect(()=>{if(!dirty)return;const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[dirty]);
+ useEffect(()=>{if(!missing||!card)return;const abort=new AbortController();void api.archiveLocation(card.id,abort.signal).then(value=>setArchiveId(value.archiveId)).catch(reason=>{if(!abort.signal.aborted)setError(errorText(reason));});return()=>abort.abort();},[missing,card?.id,lookup]);
  const targetExists=snapshot.columns.some(column=>column.id===target);
  useEffect(()=>{if(card)setDraft(value=>reconcileDraft(value,card));},[card]);
  const field=<K extends keyof Fields>(key:K,value:Fields[K])=>setDraft(previous=>({...previous,fields:{...previous.fields,[key]:value}}));
  const requestClose=()=>{if(saving)return;if(isDirty(draft))setClosing(true);else close();};
  const requestCloseDiscard=()=>{if(!saving)close();};
  async function save(compare=false){
-  if(saving||(!card&&!targetExists))return;setSaving(true);setError('');
+  if(gone||saving||(!card&&!targetExists))return;setSaving(true);setError('');
   try{
    const fields=payloadFrom(draft);
    const result=card?await api.editCard(card.id,{...fields,expectedVersion:compare?card.version:draft.baseVersion}):await api.createCard({title:fields.title,notes:fields.notes,jiraLinks:fields.jiraLinks,columnId:target});
    accept(result);close();
-  }catch(reason){setError(errorText(reason));if(reason instanceof ApiError&&reason.status===409){setConflict(true);reload();}}
+  }catch(reason){setError(errorText(reason));if(reason instanceof ApiError&&reason.code==='archived')setArchiveId(reason.archiveId);if(reason instanceof ApiError&&reason.status===409){setConflict(true);reload();}}
   finally{setSaving(false);}
  }
  const footerColumn=snapshot.columns.find(column=>column.id===(card?.columnId??target));
@@ -34,6 +39,7 @@ export function CardDialog({card,columnId,snapshot,accept,reload,close}:{card:Ca
   <form onSubmit={event=>{event.preventDefault();void save();}}>
    <div className="dialog-content">
     <PreviewToolbar/>
+    {gone&&<div className="notice"><strong>{t('archive.archivedDraft')}</strong><div className="row-actions">{archiveId?<a href={'#/archives/'+archiveId}>{t('archive.view')}</a>:<button type="button" onClick={()=>setLookup(value=>value+1)}>{t('sync.refresh')}</button>}<button type="button" onClick={()=>{setCopyVisible(true);void navigator.clipboard?.writeText(JSON.stringify(payloadFrom(draft),null,2)).catch(()=>{});}}>{t('archive.copyDraft')}</button></div>{copyVisible&&<label>{t('archive.draftCopy')}<textarea readOnly rows={6} value={JSON.stringify(payloadFrom(draft),null,2)} onFocus={event=>event.target.select()}/></label>}</div>}
     <p className="hint">{t("card.sharedFieldsHint")}</p>
     <fieldset disabled={saving}>
      {!card&&<><label>{t("card.column")}<select value={targetExists?target:''} onChange={event=>setTarget(event.target.value)}><option value="" disabled>{t("card.chooseColumn")}</option>{snapshot.columns.map(column=><option key={column.id} value={column.id}>{columnLabel(column)}</option>)}</select></label>{!targetExists&&<p className="notice">{t("card.columnDeleted")}</p>}</>}
@@ -46,7 +52,7 @@ export function CardDialog({card,columnId,snapshot,accept,reload,close}:{card:Ca
     {error&&<p role="alert" className="error">{t(error)}</p>}
     {closing&&<div className="notice" role="alert"><p>{t("card.unsavedChanges")}</p><div className="row-actions"><button type="button" disabled={saving} onClick={()=>setClosing(false)}>{t("card.keepEditing")}</button><button type="button" disabled={saving} onClick={requestCloseDiscard}>{t("card.discardAndClose")}</button></div></div>}
    </div>
-   <footer className="dialog-footer"><span className="hint">{footerColumn?columnLabel(footerColumn):''}</span><div className="row-actions">{conflict&&changed&&<button type="button" disabled={saving} onClick={()=>void save(true)}>{t("card.saveComparedDraft")}</button>}<button type="submit" className="primary" disabled={saving||!draft.fields.title.trim()||(!card&&!targetExists)}>{t(saving?'common.saving':card?'card.saveChanges':'card.create')}</button></div></footer>
+   <footer className="dialog-footer"><span className="hint">{footerColumn?columnLabel(footerColumn):''}</span><div className="row-actions">{conflict&&changed&&!gone&&<button type="button" disabled={saving} onClick={()=>void save(true)}>{t("card.saveComparedDraft")}</button>}<button type="submit" className="primary" disabled={gone||saving||!draft.fields.title.trim()||(!card&&!targetExists)}>{t(saving?'common.saving':card?'card.saveChanges':'card.create')}</button></div></footer>
   </form>
  </Modal>;
 }

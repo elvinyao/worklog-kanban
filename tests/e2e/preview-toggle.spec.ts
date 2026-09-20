@@ -1,5 +1,5 @@
 import {test,expect,board,jira,mm,login,inspect} from './fixtures';
-import {seedCard} from './shared-helpers';
+import {seedCard,sharedRead} from './shared-helpers';
 
 test('home previews default off, detail loads only its card, toggle persists and releases avatars',async({alice})=>{
  const jc=await login(alice,jira,'alice'),mc=await login(alice,mm,'alice');
@@ -19,4 +19,12 @@ test('home previews default off, detail loads only its card, toggle persists and
  await page.reload();await expect(toggle).toHaveAttribute('aria-checked','true');
  await toggle.click();await expect(page.locator('.preview')).toHaveCount(0);await expect(page.locator('img.avatar')).toHaveCount(0);
  await page.reload();await expect(toggle).toHaveAttribute('aria-checked','false');
+});
+
+test('detail preview controls keep an unsaved draft without writing shared data',async({alice})=>{
+ await login(alice,jira,'alice');const card=await seedCard(alice,'预览按钮保留草稿','DEMO-1');
+ const page=await alice.newPage();await page.goto(board);await page.getByRole('button',{name:'打开卡片：'+card.title,exact:true}).click();
+ await page.getByLabel('共享笔记').fill('尚未保存的内容');const baseline=await sharedRead(alice);
+ const controls=page.getByRole('dialog').locator('.preview-toolbar button');
+ for(let index=0;index<2;index++){await expect(controls.nth(index)).toBeEnabled();await controls.nth(index).click();await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('共享笔记')).toHaveValue('尚未保存的内容');expect((await sharedRead(alice)).revision).toBe(baseline.revision);}
 });

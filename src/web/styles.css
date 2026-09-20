@@ -51,6 +51,37 @@ h3{font-size:14px;margin-bottom:0}
 .add-card{font-size:12px;width:100%;text-align:left;color:#85927d;border:0;background:transparent;margin-top:12px;padding:8px 5px}
 .app-footer{display:flex;justify-content:space-between;padding:10px 32px 16px;font-size:11px;color:#8d998b}
 .loading{padding:50px;text-align:center;color:#8a958a}
+.board-navigation{display:flex;gap:6px;padding:18px 32px 0}
+.board-navigation a{padding:8px 16px;border-radius:8px;text-decoration:none;color:#7c8a77;font-weight:600}
+.board-navigation a[aria-current]{background:#e1e9da;color:#375b39}
+.board-navigation a span{font-size:11px;margin-left:6px;font-weight:400}
+.board-notice{margin:18px 32px 0;padding:12px 16px;border-radius:8px;background:#e7f0e1;display:flex;gap:18px;flex-wrap:wrap;font-size:12px}
+.done-column-label{display:block;font-size:9px;font-weight:400;letter-spacing:0;color:#7e9270;margin-top:3px}
+.board-toolbar{flex-wrap:wrap}.board-toolbar>div{min-width:0}.board-toolbar h2{overflow-wrap:anywhere}
+.archive-list{max-width:1180px;margin:0 auto;padding:28px 32px;min-height:65vh}
+.archive-list-heading{display:flex;align-items:baseline;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.archive-list-heading .hint{margin:0}.archive-search{margin:22px 0;max-width:460px}
+.archive-row{display:grid;grid-template-columns:minmax(180px,1fr) 160px 160px auto;gap:18px;align-items:center;padding:21px 0;border-bottom:1px solid #e0e6da;font-size:12px}
+.archive-row>div{min-width:0}.archive-name{font-size:15px;font-weight:600;color:#3e603b;text-decoration:none;overflow-wrap:anywhere}
+.archive-name:hover{text-decoration:underline}.archive-description{color:#87927e;font-size:12px;margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.archive-row time,.archive-row>span{color:#87927e;font-size:11px}
+.button-link{display:inline-block;text-decoration:none;border:1px solid #d9e0d9;border-radius:7px;background:#fff;padding:8px 13px;line-height:1.4}
+.button-link:hover{background:#edf2ec}.archive-empty{text-align:center;padding:60px 18px;color:#8a9687}
+.archive-more{display:block;margin:24px auto}.back-link{display:inline-block;margin-bottom:10px;font-size:12px}
+.archive-toolbar .hint{margin:8px 0 0}.archive-board-description,.archive-live{margin:0 32px 18px;overflow-wrap:anywhere;white-space:pre-wrap}
+.archive-board .column{min-height:100px}.archive-board .empty{padding:12px 0;margin:0}
+.archive-notes{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:#65775e}
+.shared-message-description{display:block;margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere}
+.archive-selection-group{border:1px solid #e0e6da;background:#fafbf7;border-radius:9px;padding:14px;margin:14px 0}
+.archive-selection-group h3{color:#75816c;font-size:12px;margin-bottom:8px}
+.check-label{display:flex;flex-direction:row;align-items:center;gap:11px;margin:0;font-weight:400;min-width:0}
+.check-label input{width:17px;height:17px;flex-shrink:0;accent-color:#476d3e;padding:0}
+.check-label span{min-width:0;overflow-wrap:anywhere}.check-label small{display:block;color:#929c8a;font-size:10px;margin-top:3px}
+.archive-choice{padding:12px 0;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.archive-choice+.archive-choice{border-top:1px solid #e5eade}.archive-choice>button{font-size:11px}
+.column-editor>.check-label{margin-top:12px}
+@media(max-width:950px){.archive-row{grid-template-columns:minmax(180px,1fr) auto}.archive-row time{grid-column:1;grid-row:2}.archive-row>span{grid-column:1;grid-row:3}.archive-row>.row-actions{grid-column:2;grid-row:1/4;justify-content:flex-end}}
+@media(max-width:700px){.board-navigation{padding:16px 18px 0}.board-notice{margin-left:18px;margin-right:18px}.archive-list{padding:24px 18px}.archive-row{gap:8px;grid-template-columns:minmax(0,1fr)}.archive-row>.row-actions{grid-column:1;grid-row:4;justify-content:flex-start;margin-top:8px}.archive-board-description,.archive-live{margin-left:18px;margin-right:18px}.board-toolbar>.row-actions{width:100%}}
 dialog{border:1px solid #dce3d7;border-radius:16px;padding:0;width:min(720px,calc(100vw - 28px));max-height:90vh;color:inherit;box-shadow:0 20px 80px #173b352b}
 dialog::backdrop{background:#16342d66;backdrop-filter:blur(2px)}
 .dialog-head{padding:23px 27px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e8ece5;position:sticky;top:0;background:#fff;z-index:1}
