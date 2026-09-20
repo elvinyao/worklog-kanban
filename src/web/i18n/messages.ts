@@ -1,6 +1,18 @@
 // Stable English keys; each value is [Simplified Chinese, English, Japanese].
 // UI text only. Shared card data and external content are never translation keys.
 export const messages = {
+  "card.jiraTickets": ["Jira 票据", "Jira tickets", "Jira 課題"],
+  "card.hierarchyHint": ["每张 Jira 票据下可添加多条 Mattermost 消息。移除票据会一起移除它的消息关联。", "Add Mattermost messages under each Jira ticket. Removing a ticket also removes its message links.", "Jira 課題ごとに Mattermost メッセージを追加できます。課題を削除すると、そのメッセージの関連付けも削除されます。"],
+  "card.addJira": ["添加 Jira 票据", "Add Jira ticket", "Jira 課題を追加"],
+  "card.jiraNumber": ["Jira 票据 {index}", "Jira ticket {index}", "Jira 課題 {index}"],
+  "card.moveJiraUp": ["上移 Jira 票据 {index}", "Move Jira ticket {index} up", "Jira 課題 {index} を上へ"],
+  "card.moveJiraDown": ["下移 Jira 票据 {index}", "Move Jira ticket {index} down", "Jira 課題 {index} を下へ"],
+  "card.removeJira": ["移除 Jira 票据 {index} 及其消息关联", "Remove Jira ticket {index} and its message links", "Jira 課題 {index} とメッセージの関連付けを削除"],
+  "card.moveMessageTo": ["移动到其他 Jira 票据", "Move to another Jira ticket", "別の Jira 課題へ移動"],
+  "card.chooseJira": ["选择 Jira 票据…", "Choose a Jira ticket…", "Jira 課題を選択…"],
+  "card.assignMessage": ["归属到 Jira 票据", "Assign to a Jira ticket", "Jira 課題に割り当て"],
+  "card.unassignedMessages": ["待归属消息", "Unassigned messages", "未割り当てのメッセージ"],
+  "card.unassignedHint": ["这些历史消息尚未关联 Jira。请添加或选择上方的票据，再将消息归入其中。", "These existing messages have no Jira ticket. Add or choose a ticket above, then assign each message to it.", "これらの既存メッセージには Jira 課題がありません。上で課題を追加または選択し、各メッセージを割り当ててください。"],
   "preview.reconnecting": ["正在恢复个人预览连接…", "Reconnecting personal previews…", "個人プレビューに再接続しています…"],
   "extension.title": ["扩展连接设置", "Extension connection settings", "拡張機能の接続設定"],
   "extension.eyebrow": ["你的工作空间", "YOUR WORKSPACE", "あなたのワークスペース"],

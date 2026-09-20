@@ -35,7 +35,7 @@ test('shared editing, two-page conflicts, links, and atomic column migration wor
  await page.getByRole('button',{name:'比较后用草稿保存',exact:true}).click();
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.getByRole('button',{name:'打开卡片：协作验收卡片',exact:true}).click();
- await page.getByLabel('Jira 编号或链接').fill('DEMO-1');
+ await page.getByRole('button',{name:'添加 Jira 票据'}).click();await page.getByLabel('Jira 编号或链接').fill('DEMO-1');
  await page.getByRole('button',{name:'添加消息关联'}).click();
  await page.getByLabel('消息链接 1', {exact:true}).fill('http://mattermost.localhost:4181/demo/pl/'+'a'.repeat(26));
  await page.getByLabel('消息说明 1',{exact:true}).fill('讨论入口');
@@ -45,14 +45,13 @@ test('shared editing, two-page conflicts, links, and atomic column migration wor
  await page.getByRole('button',{name:'上移消息 2'}).click();
  await page.getByRole('button',{name:'保存修改',exact:true}).click();
  await page.getByRole('button',{name:'打开卡片：协作验收卡片',exact:true}).click();
- await expect(page.getByRole('link',{name:'打开 Jira 原文'})).toHaveAttribute('href','http://jira.localhost:4180/jira/browse/DEMO-1');
+ await expect(page.getByRole('link',{name:'DEMO-1 ↗',exact:true})).toHaveAttribute('href','http://jira.localhost:4180/jira/browse/DEMO-1');
  await expect(page.getByLabel('消息说明 1',{exact:true})).toHaveValue('第二条说明');
- const popup=page.waitForEvent('popup');await page.getByRole('link',{name:'打开 Jira 原文'}).click();const original=await popup;await expect(original).toHaveURL(/jira\/browse\/DEMO-1/);await original.close();
- await page.getByLabel('Jira 编号或链接').fill('');
- await page.getByRole('button',{name:'移除消息 1'}).click();await page.getByRole('button',{name:'移除消息 1'}).click();await page.getByRole('button',{name:'保存修改',exact:true}).click();
+ const popup=page.waitForEvent('popup');await page.getByRole('link',{name:'DEMO-1 ↗',exact:true}).click();const original=await popup;await expect(original).toHaveURL(/jira\/browse\/DEMO-1/);await original.close();
+ await page.getByRole('button',{name:'移除 Jira 票据 1 及其消息关联'}).click();await page.getByRole('button',{name:'保存修改',exact:true}).click();
  await page.getByRole('button',{name:'打开卡片：协作验收卡片',exact:true}).click();
  await expect(page.getByLabel('共享笔记')).toHaveValue('本地尚未保存的笔记');
- await expect(page.getByLabel('Jira 编号或链接')).toHaveValue('');
+ await expect(page.getByLabel('Jira 编号或链接')).toHaveCount(0);
  await page.getByLabel('共享笔记').fill('未保存');
  await context.setOffline(true);await expect(page.getByRole('status')).toContainText('重连');
  const refetch=page.waitForResponse(response=>response.url().endsWith('/api/board')&&response.status()===200);

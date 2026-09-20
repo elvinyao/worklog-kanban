@@ -5,7 +5,7 @@ from app.security import error_response
 from app.store import StoreError
 
 # Never echo an arbitrary submitted field name or input value.
-LOCATIONS = {'body','path','query','header','title','notes','columnId','jiraUrl','mattermostLinks','url','description','expectedVersion','targetColumnId','index','expectedBoardRevision','name','columnIds','card_id','column_id'}
+LOCATIONS = {'body','path','query','header','title','notes','columnId','jiraLinks','unassignedMattermostLinks','mattermostLinks','id','url','description','expectedVersion','targetColumnId','index','expectedBoardRevision','name','columnIds','card_id','column_id'}
 
 
 def install_errors(app):

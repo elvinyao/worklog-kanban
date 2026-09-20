@@ -6,7 +6,8 @@ export async function seedCard(context:BrowserContext,title:string,jiraUrl:strin
  const response=await context.request.get('http://127.0.0.1:4173/api/board',{headers});
  if(!response.ok())throw new Error('Shared fixture read failed');
  const snapshot=await response.json() as components['schemas']['BoardSnapshot'];
- const result=await context.request.post('http://127.0.0.1:4173/api/cards',{headers,data:{title,notes:'',columnId:columnId??snapshot.columns[0]!.id,jiraUrl,mattermostLinks}});
+ if(!jiraUrl&&mattermostLinks.length)throw new Error('Messages require a Jira ticket');
+ const result=await context.request.post('http://127.0.0.1:4173/api/cards',{headers,data:{title,notes:'',columnId:columnId??snapshot.columns[0]!.id,jiraLinks:jiraUrl?[{url:jiraUrl,mattermostLinks}]:[]}});
  if(!result.ok())throw new Error('Shared fixture create failed');
  const next=await result.json() as components['schemas']['BoardSnapshot'];return next.cards.find(card=>card.title===title)!;
 }

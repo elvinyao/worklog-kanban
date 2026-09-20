@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-**T01–T19 的实现与自动验证已完成；扩展 0.2.0 支持部署默认值及安装后设置页，默认 Docker 已更新到当前功能。三语言入口仍仅在首页，设置页自动跟随浏览器语言。沿用 main 本地提交；真实 Chrome/Edge 原生授权弹窗及原有 dummy 整体手动验收仍待确认。**
+**T01–T21 的实现与自动验证已完成；扩展 0.3.0 修复后台休眠后的预览恢复，卡片支持多 Jira、每 Jira 多 Mattermost，默认 Docker 已备份并迁移到 v2。三语言入口仍仅在首页。沿用 main 本地提交；真实 Chrome/Edge 原生授权弹窗及原有 dummy 整体手动验收仍待确认。**
 
 T14 受测应用版本 `add5fbb`；98 后端测试、69 前端逻辑测试、普通 Chromium 完整 25 项及补充安全用例 1 项通过，独立 StrictMode 构建 9 项通过。[综合确认结果](acceptance-001/総合確認結果.md)逐项映射 45 个 dummy 观察点，明确 43 项自动/静态范围内通过、K02 部分通过、R01 未执行。
 
@@ -53,11 +53,13 @@ T19 受测实现 `582530e`；91 前端、106 后端、完整普通浏览器 38 �
 | T17 首页语言入口美化 | 完成；默认 Docker 已更新 | [修订计划](../../2026-09-19_i18n/対応計画.md#t17-入口收敛与外观修订)、[基线和负例](task17_language-ui/attempt-001/実行結果.md)、[复验与综合确认](task17_language-ui/attempt-002/実行結果.md) |
 | T18 英文消息键 | 完成；三语言文案不变 | [基线和负例](task18_message-keys/attempt-001/実行結果.md)、[首轮验证](task18_message-keys/attempt-002/実行結果.md)、[33 项浏览器复验与综合确认](task18_message-keys/attempt-003/実行結果.md) |
 | T19 安装后扩展设置 | 实现与自动验证完成；Docker 已更新；原生授权弹窗待验 | [基线与 RED](task19_extension-settings/attempt-001/実行結果.md)、[首轮与环境边界](task19_extension-settings/attempt-002/実行結果.md)、[竞态修复和回归](task19_extension-settings/attempt-003/実行結果.md)、[最终交付](task19_extension-settings/attempt-004/実行結果.md) |
+| T20 预览自动恢复 | 完成；扩展 0.3.0 已导出 | [RED 与首验](task20_preview-recovery/attempt-001/実行結果.md)、[修正后验证](task20_preview-recovery/attempt-002/実行結果.md) |
+| T21 Jira / Mattermost 层级 | 完成；旧库备份与 v2 迁移已核对 | [RED/首验](task21_jira-hierarchy/attempt-001/実行結果.md)、[完整回归与计数修正](task21_jira-hierarchy/attempt-002/実行結果.md)、[补充计数复验](task21_jira-hierarchy/attempt-003/実行結果.md)、[44 普通/21 StrictMode 与交付](task21_jira-hierarchy/attempt-004/実行結果.md) |
 
 ## 下一步与阻碍
 
-- T20/T21 正在修复预览闲置后消失，并实现 Card → 多 Jira → 多 Mattermost；[设计](../../2026-09-20_jira-hierarchy/設計.md)、[计划](../../2026-09-20_jira-hierarchy/対応計画.md)、[追加观察点](追加テスト観点_階層.md)。现有数据库需保留并迁移，先在合成旧库验证。
-- T20 自动恢复已实现并通过 97 单元及相关浏览器验证，[初验与 RED](task20_preview-recovery/attempt-001/実行結果.md)、[复验](task20_preview-recovery/attempt-002/実行結果.md)；T21 层级与数据迁移继续实施，Docker 将在集成后统一更新。
+- T20/T21 已完成；[设计](../../2026-09-20_jira-hierarchy/設計.md)、[计划](../../2026-09-20_jira-hierarchy/対応計画.md)、[追加观察点](追加テスト観点_階層.md)。98 前端、113 后端、44 普通浏览器和 21 StrictMode 通过。默认库 2 张卡、1 条消息与 revision 6 原样保留，自动备份路径见 T21 最终交付证据。
+- 使用新功能前，在浏览器扩展管理页重新加载 `dist/extension-docker`（0.3.0），刷新看板，并重新登录两个模拟站点。历史无 Jira 消息在“待归属消息”中保留；新消息在对应 Jira 分组下添加。
 
 - T19 的[设计与范围](../../2026-09-20_extension-settings/設計.md)、[实施计划](../../2026-09-20_extension-settings/対応計画.md)和[设置手动步骤](../../2026-09-20_extension-settings/手動確認手順.md)。用户需重新加载扩展并刷新看板；ES-M01 原生弹窗允许/拒绝在实际 Chrome/Edge 待验，Chrome 管理页预授权测试不能替代这一步。
 - 默认 Docker 看板、Jira、Mattermost 已启动，可访问 `http://board.localhost:4173/`；四个双击入口和 `bash docker.sh` 用法见 [运行说明](../../运行说明.md)。个人预览首次需加载 `dist/extension-docker`。没有外部部署或 push。

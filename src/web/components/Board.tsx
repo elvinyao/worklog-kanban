@@ -59,9 +59,9 @@ export function Board({snapshot,open,create,accept,reload,focusRequest}:{snapsho
     <button ref={node=>{if(node)cards.current.set(card.id,node);else cards.current.delete(card.id);}} data-nav-card={card.id} className="card-open" aria-label={t('card.open',{title:card.title})} onClick={()=>{if(!busy.current&&!dragged.current)open(card);}}>
      <span className="card-title">{card.title}</span>
      {card.notes&&<span className="card-notes">{card.notes}</span>}
-     <span className="card-tags">{card.jira&&<span className="tag">{card.jira.key}</span>}{card.mattermostLinks.length>0&&<span className="tag neutral">{t(card.mattermostLinks.length===1?'card.oneMessage':'card.messageCount',{count:card.mattermostLinks.length})}</span>}</span>
+     <span className="card-tags">{card.jiraLinks.map(jira=><span className="tag" key={jira.id}>{jira.key}{jira.mattermostLinks.length>0&&` · ${jira.mattermostLinks.length}`}</span>)}{card.unassignedMattermostLinks.length>0&&<span className="tag neutral">{t('card.unassignedMessages')} · {card.unassignedMattermostLinks.length}</span>}</span>
     </button>
-    {card.jira&&<Preview key={card.jira.url} resource={{kind:'jira',id:card.jira.key,url:card.jira.url}} compact/>}
+    {card.jiraLinks.map(jira=><Preview key={jira.url} resource={{kind:'jira',id:jira.key,url:jira.url}} compact/>)}
    </article>)}</div>
    {!layout.cards.some(card=>card.columnId===column.id)&&<p className="empty">{t("board.emptyColumn")}</p>}
    <button className="add-card" onClick={()=>create(column.id)}>＋ {t('card.add')}</button>

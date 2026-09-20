@@ -49,15 +49,15 @@ def test_only_unmodified_seed_columns_have_localized_labels(store):
 
 
 def test_links_normalize_without_overwriting_shared_notes(store):
-    board = create(store, notes='共享笔记', jiraUrl='demo-1', mattermostLinks=[{'url':CONFIG.mattermostBaseUrl+'/demo/pl/'+'a'*26,'description':'共享说明'}])
+    board = create(store, notes='共享笔记', jiraLinks=[{'url':'demo-1','mattermostLinks':[{'url':CONFIG.mattermostBaseUrl+'/demo/pl/'+'a'*26,'description':'共享说明'}]}])
     card = board.cards[0]
     assert card.title == '合成卡片'
-    assert card.jira.key == 'DEMO-1'
-    assert card.mattermostLinks[0].postId == 'a'*26
-    changed = store.edit_card(card.id, EditCard(expectedVersion=card.version,jiraUrl=None), '127.0.0.1')
+    assert card.jiraLinks[0].key == 'DEMO-1'
+    assert card.jiraLinks[0].mattermostLinks[0].postId == 'a'*26
+    changed = store.edit_card(card.id, EditCard(expectedVersion=card.version,jiraLinks=[]), '127.0.0.1')
     assert changed.cards[0].notes == '共享笔记'
-    assert changed.cards[0].jira is None
-    assert changed.cards[0].mattermostLinks == card.mattermostLinks
+    assert changed.cards[0].jiraLinks == []
+    assert changed.cards[0].unassignedMattermostLinks == []
 
 
 def test_stale_card_edits_conflict_but_unrelated_edits_succeed(store):
@@ -131,7 +131,7 @@ def test_two_independent_connections_cannot_overwrite_one_version(store):
 def test_invalid_link_or_move_rolls_back_everything(store):
     before=store.snapshot()
     with pytest.raises(StoreError, match='invalid_link'):
-        create(store,jiraUrl='https://evil.invalid/browse/DEMO-1')
+        create(store,jiraLinks=[{'url':'https://evil.invalid/browse/DEMO-1'}])
     assert store.snapshot() == before
     board=create(store)
     with pytest.raises(StoreError, match='invalid_position'):
@@ -154,10 +154,10 @@ def test_audit_contains_only_metadata_and_foreign_keys_are_enforced(store):
 
 
 def test_failure_after_content_update_rolls_back_version_revision_links_and_audit(store):
-    before=create(store, notes='保留笔记',mattermostLinks=[{'url':CONFIG.mattermostBaseUrl+'/demo/pl/'+'a'*26}])
+    before=create(store, notes='保留笔记',jiraLinks=[{'url':'DEMO-1','mattermostLinks':[{'url':CONFIG.mattermostBaseUrl+'/demo/pl/'+'a'*26}]}])
     card=before.cards[0]
     with pytest.raises(StoreError,match='invalid_link'):
-        store.edit_card(card.id,EditCard(expectedVersion=card.version,notes='不应提交',mattermostLinks=[{'url':'https://evil.invalid/demo/pl/'+'a'*26}]),'127.0.0.1')
+        store.edit_card(card.id,EditCard(expectedVersion=card.version,notes='不应提交',jiraLinks=[{'url':'DEMO-1','mattermostLinks':[{'url':'https://evil.invalid/demo/pl/'+'a'*26}]}]),'127.0.0.1')
     assert store.snapshot()==before
     with sqlite3.connect(store.path) as connection:
         assert connection.execute('SELECT COUNT(*) FROM audit_events').fetchone()[0]==before.revision
@@ -172,5 +172,5 @@ def test_same_column_reorder_and_link_order_are_stable(store):
     assert [(c.title,c.position) for c in changed.cards]==[('B',0),('C',1),('A',2)]
     card=changed.cards[-1]
     links=[{'url':CONFIG.mattermostBaseUrl+'/demo/pl/'+letter*26,'description':letter} for letter in ['b','a']]
-    changed=store.edit_card(card.id,EditCard(expectedVersion=card.version,mattermostLinks=links),'127.0.0.1')
-    assert [(v.postId,v.position) for v in changed.cards[-1].mattermostLinks]==[('b'*26,0),('a'*26,1)]
+    changed=store.edit_card(card.id,EditCard(expectedVersion=card.version,jiraLinks=[{'url':'DEMO-1','mattermostLinks':links}]),'127.0.0.1')
+    assert [(v.postId,v.position) for v in changed.cards[-1].jiraLinks[0].mattermostLinks]==[('b'*26,0),('a'*26,1)]

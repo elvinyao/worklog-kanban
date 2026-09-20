@@ -32,7 +32,7 @@ def test_shared_api_create_edit_conflict_and_no_personal_fields(client):
     assert conflict.status_code==409
     assert conflict.json()=={'code':'conflict','fields':[]}
     assert client.get('/api/board').json()==changed.json()
-    assert set(card)=={'id','columnId','title','notes','position','version','jira','mattermostLinks'}
+    assert set(card)=={'id','columnId','title','notes','position','version','jiraLinks','unassignedMattermostLinks'}
 
 
 def test_write_boundaries_and_safe_validation_errors(client):

@@ -2,7 +2,7 @@ import { expect,it,vi } from 'vitest';
 import type { Card,Snapshot } from '../../src/web/api';
 import { SharedBoard,type Subscription } from '../../src/web/state/shared';
 import { draftFrom,reconcileDraft,payloadFrom } from '../../src/web/state/drafts';
-const card:Card={id:'card',title:'共享标题',notes:'原笔记',version:1,columnId:'column',position:0,jira:null,mattermostLinks:[]};
+const card:Card={id:'card',title:'共享标题',notes:'原笔记',version:1,columnId:'column',position:0,jiraLinks:[],unassignedMattermostLinks:[]};
 const snapshot=(revision:number):Snapshot=>({revision,columns:[{id:'column',name:'待处理',position:0}],cards:[card]});
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 it('subscribes before snapshot and refetches when an event arrives during the first fetch',async()=>{
@@ -31,7 +31,16 @@ it('remote snapshots preserve dirty drafts and only clean drafts follow the serv
  expect(reconcileDraft(draft,remote)).toMatchObject({baseVersion:2,fields:{notes:'远端更新'}});
  const dirty={...draft,fields:{...draft.fields,notes:'本地未保存'}};
  expect(reconcileDraft(dirty,remote)).toBe(dirty);
- expect(payloadFrom(Object.assign(dirty,{preview:'ALICE_ONLY_MARKER',cookie:'synthetic'}))).toEqual({title:'共享标题',notes:'本地未保存',jiraUrl:null,mattermostLinks:[]});
+ expect(payloadFrom(Object.assign(dirty,{preview:'ALICE_ONLY_MARKER',cookie:'synthetic'}))).toEqual({title:'共享标题',notes:'本地未保存',jiraLinks:[],unassignedMattermostLinks:[]});
+});
+it('preserves a dirty nested hierarchy across remote changes and strips private fields at every level',()=>{
+ const message={id:'message',postId:'a'.repeat(26),team:'demo',url:'http://mattermost.localhost:4181/demo/pl/'+'a'.repeat(26),description:'Shared',position:0};
+ const jira={id:'jira',key:'DEMO-1',url:'http://jira.localhost:4180/jira/browse/DEMO-1',position:0,mattermostLinks:[message]};
+ const original={...card,jiraLinks:[jira],unassignedMattermostLinks:[{...message,id:'orphan'}]};const draft=draftFrom(original);
+ const dirty={...draft,fields:{...draft.fields,jiraLinks:[{...draft.fields.jiraLinks[0]!,preview:'PRIVATE',mattermostLinks:[{...draft.fields.jiraLinks[0]!.mattermostLinks[0]!,description:'Local change',author:'PRIVATE',text:'PRIVATE',avatar:'PRIVATE'}]}],unassignedMattermostLinks:[{...draft.fields.unassignedMattermostLinks[0]!,preview:'PRIVATE'}]}};
+ expect(reconcileDraft(dirty,{...original,version:2,jiraLinks:[],notes:'Remote'})).toBe(dirty);
+ expect(dirty.baseVersion).toBe(1);expect(draft.baseline.jiraLinks[0]!.mattermostLinks[0]!.description).toBe('Shared');
+ const payload=payloadFrom(dirty);expect(JSON.stringify(payload)).not.toContain('PRIVATE');expect(JSON.stringify(payload)).not.toContain('draftId');expect(payload.jiraLinks[0]!.mattermostLinks[0]!.description).toBe('Local change');expect(payload.unassignedMattermostLinks[0]!.id).toBe('orphan');
 });
 it('a failed in-flight fetch still runs the full refresh queued by reconnect',async()=>{
  let listener:Subscription|undefined;let fail:(reason:Error)=>void=()=>{};

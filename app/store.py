@@ -5,14 +5,10 @@ import sqlite3
 import uuid
 
 from app.config import SiteConfig
+from app import associations
+from app.errors import StoreError
 from app.resource_links import parse_resource
 from app.schemas import BoardSnapshot, ChangeColumn, CreateCard, DeleteColumn, EditCard, MoveCard, ReorderColumns
-
-
-class StoreError(Exception):
-    def __init__(self, code):
-        self.code = code
-        super().__init__(code)
 
 
 class Store:
@@ -36,15 +32,28 @@ class Store:
     def initialize(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connection() as connection:
-            if connection.execute('PRAGMA user_version').fetchone()[0] > 1:
+            version = connection.execute('PRAGMA user_version').fetchone()[0]
+            if version > 2:
                 raise StoreError('unsupported_database_version')
             connection.execute('PRAGMA journal_mode=WAL')
-            connection.executescript(Path(__file__).with_name('schema.sql').read_text())
+            legacy = version < 2 and connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='cards'").fetchone() is not None
+            if legacy:
+                backup_path = self.path.with_name(self.path.name+'.pre-v2-'+uuid.uuid4().hex+'.sqlite3')
+                with sqlite3.connect(backup_path) as backup:
+                    connection.backup(backup)
+            prefix = 'BEGIN IMMEDIATE;\n'
+            if legacy:
+                prefix += 'ALTER TABLE mattermost_links RENAME TO legacy_mattermost_links;\n'
+            connection.executescript(prefix+Path(__file__).with_name('schema.sql').read_text())
+            if legacy:
+                associations.migrate_legacy(connection)
             if connection.execute('SELECT 1 FROM board_meta WHERE id=1').fetchone() is None:
                 connection.execute('INSERT INTO board_meta VALUES (1,0)')
                 for position, name in enumerate(['待处理','调查中','实装中','单体测试','结合测试','完成']):
                     connection.execute('INSERT INTO columns VALUES (?,?,?)', (uuid.uuid4().hex,name,position))
-            connection.execute('PRAGMA user_version=1')
+            if connection.execute('PRAGMA foreign_key_check').fetchall():
+                raise StoreError('invalid_database')
+            connection.execute('PRAGMA user_version=2')
             connection.commit()
 
     def snapshot(self) -> BoardSnapshot:
@@ -62,12 +71,10 @@ class Store:
         defaults = dict(zip(['待处理','调查中','实装中','单体测试','结合测试','完成'], ['todo','investigating','implementing','unitTesting','integrationTesting','done']))
         for column in columns:
             column['defaultNameKey'] = None if column['id'] in custom else defaults.get(column['name'])
-        links = {}
-        for row in connection.execute('SELECT * FROM mattermost_links ORDER BY position'):
-            links.setdefault(row['card_id'], []).append({'id':row['id'],'postId':row['post_id'],'team':row['team'],'url':row['url'],'description':row['description'],'position':row['position']})
+        tickets, unassigned = associations.snapshot(connection)
         cards = []
         for row in connection.execute('SELECT cards.* FROM cards JOIN columns ON cards.column_id=columns.id ORDER BY columns.position,cards.position'):
-            cards.append({'id':row['id'],'columnId':row['column_id'],'title':row['title'],'notes':row['notes'],'position':row['position'],'version':row['version'],'jira':{'key':row['jira_key'],'url':row['jira_url']} if row['jira_key'] else None,'mattermostLinks':links.get(row['id'],[])})
+            cards.append({'id':row['id'],'columnId':row['column_id'],'title':row['title'],'notes':row['notes'],'position':row['position'],'version':row['version'],'jiraLinks':tickets.get(row['id'],[]),'unassignedMattermostLinks':unassigned.get(row['id'],[])})
         return BoardSnapshot(revision=revision,columns=columns,cards=cards)
 
     def _write(self, action, resource_id, source_ip, operation):
@@ -110,20 +117,13 @@ class Store:
         except ValueError:
             raise StoreError('invalid_link') from None
 
-    def _links(self, connection, card_id, links):
-        normalized = [(link,self._resource('mattermost',link.url)) for link in links]
-        connection.execute('DELETE FROM mattermost_links WHERE card_id=?', (card_id,))
-        for position, (link,resource) in enumerate(normalized):
-            connection.execute('INSERT INTO mattermost_links (id,card_id,post_id,team,url,description,position) VALUES (?,?,?,?,?,?,?)', (uuid.uuid4().hex,card_id,resource['id'],resource['team'],resource['url'],link.description,position))
-
     def create_card(self, data: CreateCard, source_ip: str):
         card_id = uuid.uuid4().hex
         def operation(connection):
             self._column(connection,data.columnId)
-            jira = self._resource('jira',data.jiraUrl) if data.jiraUrl else None
             position = connection.execute('SELECT COUNT(*) FROM cards WHERE column_id=?', (data.columnId,)).fetchone()[0]
-            connection.execute('INSERT INTO cards (id,title,notes,column_id,position,version,jira_key,jira_url) VALUES (?,?,?,?,?,?,?,?)', (card_id,data.title,data.notes,data.columnId,position,1,jira['id'] if jira else None,jira['url'] if jira else None))
-            self._links(connection,card_id,data.mattermostLinks)
+            connection.execute('INSERT INTO cards (id,title,notes,column_id,position,version) VALUES (?,?,?,?,?,?)', (card_id,data.title,data.notes,data.columnId,position,1))
+            associations.replace(connection,card_id,data.jiraLinks,None,self._resource)
         return self._write('card.create',card_id,source_ip,operation)
 
     def edit_card(self, card_id: str, data: EditCard, source_ip: str):
@@ -134,13 +134,9 @@ class Store:
             fields = data.model_fields_set
             title = data.title if 'title' in fields else card['title']
             notes = data.notes if 'notes' in fields else card['notes']
-            jira_key,jira_url = card['jira_key'],card['jira_url']
-            if 'jiraUrl' in fields:
-                jira = self._resource('jira',data.jiraUrl) if data.jiraUrl else None
-                jira_key,jira_url = (jira['id'],jira['url']) if jira else (None,None)
-            connection.execute('UPDATE cards SET title=?,notes=?,jira_key=?,jira_url=?,version=version+1 WHERE id=?', (title,notes,jira_key,jira_url,card_id))
-            if 'mattermostLinks' in fields:
-                self._links(connection,card_id,data.mattermostLinks)
+            connection.execute('UPDATE cards SET title=?,notes=?,version=version+1 WHERE id=?', (title,notes,card_id))
+            if fields & {'jiraLinks','unassignedMattermostLinks'}:
+                associations.replace(connection,card_id,data.jiraLinks,data.unassignedMattermostLinks,self._resource)
         return self._write('card.edit',card_id,source_ip,operation)
 
     @staticmethod

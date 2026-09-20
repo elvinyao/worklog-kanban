@@ -22,26 +22,34 @@ class MessageLinkInput(SharedModel):
     description: Annotated[str, Field(max_length=2000)] = ''
 
 
+class JiraLinkInput(SharedModel):
+    url: Link
+    mattermostLinks: Annotated[list[MessageLinkInput], Field(max_length=20)] = Field(default_factory=list)
+
+
+class UnassignedMessageInput(MessageLinkInput):
+    id: Identifier
+
+
 class CreateCard(SharedModel):
     title: Title
     columnId: Identifier
     notes: Notes = ''
-    jiraUrl: Link | None = None
-    mattermostLinks: Annotated[list[MessageLinkInput], Field(max_length=20)] = Field(default_factory=list)
+    jiraLinks: Annotated[list[JiraLinkInput], Field(max_length=20)] = Field(default_factory=list)
 
 
 class EditCard(SharedModel):
     expectedVersion: Version
     title: Title | None = None
     notes: Notes | None = None
-    jiraUrl: Link | None = None
-    mattermostLinks: Annotated[list[MessageLinkInput], Field(max_length=20)] | None = None
+    jiraLinks: Annotated[list[JiraLinkInput], Field(max_length=20)] | None = None
+    unassignedMattermostLinks: Annotated[list[UnassignedMessageInput], Field(max_length=20)] | None = None
 
     @model_validator(mode='after')
     def patch_fields(self):
         fields = self.model_fields_set - {'expectedVersion'}
-        if not fields or any(getattr(self, field) is None for field in fields - {'jiraUrl'}):
-            raise ValueError('Supply non-null editable fields; jiraUrl alone may be null')
+        if not fields or any(getattr(self, field) is None for field in fields):
+            raise ValueError('Supply non-null editable fields')
         return self
 
 
@@ -79,16 +87,19 @@ class Column(SharedModel):
     defaultNameKey: Literal['todo','investigating','implementing','unitTesting','integrationTesting','done'] | None = None
 
 
-class JiraLink(SharedModel):
-    key: str
-    url: Link
-
-
 class MessageLink(MessageLinkInput):
     id: Identifier
     postId: str
     team: str
     position: Annotated[int, Field(ge=0)]
+
+
+class JiraLink(SharedModel):
+    id: Identifier
+    key: str
+    url: Link
+    position: Annotated[int, Field(ge=0)]
+    mattermostLinks: list[MessageLink]
 
 
 class Card(SharedModel):
@@ -98,8 +109,8 @@ class Card(SharedModel):
     notes: Notes
     position: Annotated[int, Field(ge=0)]
     version: Version
-    jira: JiraLink | None
-    mattermostLinks: list[MessageLink]
+    jiraLinks: list[JiraLink]
+    unassignedMattermostLinks: list[MessageLink]
 
 
 class BoardSnapshot(SharedModel):

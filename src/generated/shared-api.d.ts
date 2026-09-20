@@ -155,15 +155,16 @@ export interface components {
             columnId: string;
             /** Id */
             id: string;
-            jira: components["schemas"]["JiraLink"] | null;
-            /** Mattermostlinks */
-            mattermostLinks: components["schemas"]["MessageLink"][];
+            /** Jiralinks */
+            jiraLinks: components["schemas"]["JiraLink"][];
             /** Notes */
             notes: string;
             /** Position */
             position: number;
             /** Title */
             title: string;
+            /** Unassignedmattermostlinks */
+            unassignedMattermostLinks: components["schemas"]["MessageLink"][];
             /** Version */
             version: number;
         };
@@ -189,10 +190,8 @@ export interface components {
         CreateCard: {
             /** Columnid */
             columnId: string;
-            /** Jiraurl */
-            jiraUrl?: string | null;
-            /** Mattermostlinks */
-            mattermostLinks?: components["schemas"]["MessageLinkInput"][];
+            /** Jiralinks */
+            jiraLinks?: components["schemas"]["JiraLinkInput"][];
             /**
              * Notes
              * @default
@@ -212,14 +211,14 @@ export interface components {
         EditCard: {
             /** Expectedversion */
             expectedVersion: number;
-            /** Jiraurl */
-            jiraUrl?: string | null;
-            /** Mattermostlinks */
-            mattermostLinks?: components["schemas"]["MessageLinkInput"][] | null;
+            /** Jiralinks */
+            jiraLinks?: components["schemas"]["JiraLinkInput"][] | null;
             /** Notes */
             notes?: string | null;
             /** Title */
             title?: string | null;
+            /** Unassignedmattermostlinks */
+            unassignedMattermostLinks?: components["schemas"]["UnassignedMessageInput"][] | null;
         };
         /** ErrorResponse */
         ErrorResponse: {
@@ -230,8 +229,21 @@ export interface components {
         };
         /** JiraLink */
         JiraLink: {
+            /** Id */
+            id: string;
             /** Key */
             key: string;
+            /** Mattermostlinks */
+            mattermostLinks: components["schemas"]["MessageLink"][];
+            /** Position */
+            position: number;
+            /** Url */
+            url: string;
+        };
+        /** JiraLinkInput */
+        JiraLinkInput: {
+            /** Mattermostlinks */
+            mattermostLinks?: components["schemas"]["MessageLinkInput"][];
             /** Url */
             url: string;
         };
@@ -278,6 +290,18 @@ export interface components {
             columnIds: string[];
             /** Expectedboardrevision */
             expectedBoardRevision: number;
+        };
+        /** UnassignedMessageInput */
+        UnassignedMessageInput: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Id */
+            id: string;
+            /** Url */
+            url: string;
         };
     };
     responses: never;

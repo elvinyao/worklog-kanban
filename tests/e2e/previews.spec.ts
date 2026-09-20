@@ -2,14 +2,14 @@ import { test,expect,board,jira,mm,login,inspect,fault } from './fixtures';
 import type { Page } from '@playwright/test';
 import { seedCard } from './shared-helpers';
 async function create(page:Page,title:string,jiraKey:string,posts:string[]=[]){
- await page.getByRole('button',{name:'新建卡片',exact:true}).click();await page.getByLabel('共享标题').fill(title);await page.getByLabel('Jira 编号或链接').fill(jiraKey);
+ await page.getByRole('button',{name:'新建卡片',exact:true}).click();await page.getByLabel('共享标题').fill(title);await page.getByRole('button',{name:'添加 Jira 票据'}).click();await page.getByLabel('Jira 编号或链接').fill(jiraKey);
  for(let i=0;i<posts.length;i++){await page.getByRole('button',{name:'添加消息关联'}).click();await page.getByLabel('消息链接 '+(i+1),{exact:true}).fill(mm+'/demo/pl/'+posts[i]);}
  await page.getByRole('button',{name:'创建卡片',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 test('personal previews are deduplicated, safe, and separate from shared title and notes',async({alice,bob})=>{
  const control=await login(alice,jira,'alice');await login(alice,mm,'alice');await login(bob,jira,'bob');await login(bob,mm,'bob');
- const page=await alice.newPage();let untrustedRequests=0;page.on('request',request=>{if(request.url().includes('untrusted.localhost'))untrustedRequests++;});await page.goto(board);await expect(page.getByTestId('preview-connection')).toHaveText('个人预览已连接');
  const before=(await inspect(control)).requests.filter(request=>request.path.includes('/issue/DEMO-1')).length;
+ const page=await alice.newPage();let untrustedRequests=0;page.on('request',request=>{if(request.url().includes('untrusted.localhost'))untrustedRequests++;});await page.goto(board);await expect(page.getByTestId('preview-connection')).toHaveText('个人预览已连接');
  await create(page,'预览验收一','DEMO-1',['a'.repeat(26),'x'.repeat(26),'l'.repeat(26)]);
  const card=page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：预览验收一',exact:true})});
  await expect(card.getByText('验证个人预览与共享工作记录',{exact:true})).toBeVisible();
@@ -45,7 +45,7 @@ test('changing and unbinding a slow association never displays its old personal 
  const page=await alice.newPage();await page.goto(board);await expect.poll(async()=>(await inspect(control)).requests.filter(request=>request.path.includes('/issue/DEMO-2')).length).toBeGreaterThan(0);
  await page.getByRole('button',{name:'打开卡片：切换关联验收',exact:true}).click();await page.getByLabel('共享笔记').fill('切换保留笔记');await page.getByLabel('Jira 编号或链接').fill('DEMO-3');await page.getByRole('button',{name:'保存修改',exact:true}).click();
  const card=page.locator('article').filter({has:page.getByRole('button',{name:'打开卡片：切换关联验收',exact:true})});await expect(card.getByText('没有评论和担当者的模拟票据',{exact:true})).toBeVisible();await expect(card.getByText(/ALICE_ONLY_MARKER/)).toHaveCount(0);
- await card.getByRole('button',{name:'打开卡片：切换关联验收',exact:true}).click();await expect(page.getByLabel('共享笔记')).toHaveValue('切换保留笔记');await page.getByLabel('Jira 编号或链接').fill('');await page.getByRole('button',{name:'保存修改',exact:true}).click();
+ await card.getByRole('button',{name:'打开卡片：切换关联验收',exact:true}).click();await expect(page.getByLabel('共享笔记')).toHaveValue('切换保留笔记');await page.getByRole('button',{name:'移除 Jira 票据 1 及其消息关联'}).click();await page.getByRole('button',{name:'保存修改',exact:true}).click();
  await expect(card.locator('.preview')).toHaveCount(0);await new Promise(resolve=>setTimeout(resolve,800));await expect(card.locator('.preview')).toHaveCount(0);
 });
 test('page and StrictMode cleanup leave one connection, clear private content, preserve drafts, and stop paging',async({alice})=>{

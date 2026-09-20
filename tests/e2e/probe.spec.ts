@@ -59,11 +59,13 @@ test('page lifecycle removes listeners and aborts paging; StrictMode is exercise
   const before=(await inspect(control)).requests.length;
   await page.getByRole('button',{name:'读取 Jira',exact:true}).click();
   await expect.poll(async()=>(await inspect(control)).requests.length).toBeGreaterThanOrEqual(before+2);
-  const closing=(await inspect(control)).requests.length;
-  expect(closing).toBeLessThan(before+55);
+  expect((await inspect(control)).requests.length).toBeLessThan(before+55);
   await expect(page.getByRole('button',{name:'读取 Jira',exact:true})).toBeDisabled();
   await page.close();
   await expect.poll(async()=>worker.evaluate(()=>Reflect.get(globalThis,'__probeTransport').active)).toBe(0);
+  // Sample after disconnect: a page may legitimately begin during the pre-close assertions.
+  const closing=(await inspect(control)).requests.length;
+  expect(closing).toBeLessThan(before+55);
   // Wait longer than two dummy response periods; further pages must not begin.
   await new Promise(resolve=>setTimeout(resolve,1100));
   expect((await inspect(control)).requests.length).toBe(closing);

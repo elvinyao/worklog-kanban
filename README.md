@@ -4,6 +4,8 @@
 
 共享标题、笔记和关联保存在 SQLite；外部正文和头像只保留在当前查看者的页面内存。默认提供 Jira DC / Server 9.7 与 Mattermost API v4 的独立模拟服务，无需公司环境。
 
+一张卡片可关联多张 Jira 票据，每张 Jira 可关联多条 Mattermost 消息。详情内可排列票据、排列消息或将消息移到另一张票据。扩展后台闲置休眠后自动恢复连接，当前页面已显示的预览保留。
+
 ## 一键运行
 
 只需安装并启动 Docker Desktop 或 OrbStack（含 Docker Compose v2），无需安装 Python、Node 或数据库。

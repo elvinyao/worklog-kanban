@@ -14,7 +14,7 @@ def test_export_uses_real_routes_without_initializing_database(tmp_path):
     assert not database.parent.exists()
     assert set(schema['paths'])=={'/api/board','/api/events','/api/cards','/api/cards/{card_id}','/api/cards/{card_id}/move','/api/columns','/api/columns/{column_id}','/api/columns/reorder'}
     properties=schema['components']['schemas']['CreateCard']['properties']
-    assert set(properties)=={'title','columnId','notes','jiraUrl','mattermostLinks'}
+    assert set(properties)=={'title','columnId','notes','jiraLinks'}
     assert not {'JiraPreview','MattermostPreview'} & set(schema['components']['schemas'])
     assert schema['components']['schemas']['CreateCard']['additionalProperties'] is False
 

@@ -49,21 +49,11 @@
             "title": "Id",
             "type": "string"
           },
-          "jira": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/JiraLink"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "mattermostLinks": {
+          "jiraLinks": {
             "items": {
-              "$ref": "#/components/schemas/MessageLink"
+              "$ref": "#/components/schemas/JiraLink"
             },
-            "title": "Mattermostlinks",
+            "title": "Jiralinks",
             "type": "array"
           },
           "notes": {
@@ -82,6 +72,13 @@
             "title": "Title",
             "type": "string"
           },
+          "unassignedMattermostLinks": {
+            "items": {
+              "$ref": "#/components/schemas/MessageLink"
+            },
+            "title": "Unassignedmattermostlinks",
+            "type": "array"
+          },
           "version": {
             "minimum": 1.0,
             "title": "Version",
@@ -95,8 +92,8 @@
           "notes",
           "position",
           "version",
-          "jira",
-          "mattermostLinks"
+          "jiraLinks",
+          "unassignedMattermostLinks"
         ],
         "title": "Card",
         "type": "object"
@@ -182,25 +179,12 @@
             "title": "Columnid",
             "type": "string"
           },
-          "jiraUrl": {
-            "anyOf": [
-              {
-                "maxLength": 2048,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Jiraurl"
-          },
-          "mattermostLinks": {
+          "jiraLinks": {
             "items": {
-              "$ref": "#/components/schemas/MessageLinkInput"
+              "$ref": "#/components/schemas/JiraLinkInput"
             },
             "maxItems": 20,
-            "title": "Mattermostlinks",
+            "title": "Jiralinks",
             "type": "array"
           },
           "notes": {
@@ -254,24 +238,11 @@
             "title": "Expectedversion",
             "type": "integer"
           },
-          "jiraUrl": {
-            "anyOf": [
-              {
-                "maxLength": 2048,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Jiraurl"
-          },
-          "mattermostLinks": {
+          "jiraLinks": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/MessageLinkInput"
+                  "$ref": "#/components/schemas/JiraLinkInput"
                 },
                 "maxItems": 20,
                 "type": "array"
@@ -280,7 +251,7 @@
                 "type": "null"
               }
             ],
-            "title": "Mattermostlinks"
+            "title": "Jiralinks"
           },
           "notes": {
             "anyOf": [
@@ -306,6 +277,21 @@
               }
             ],
             "title": "Title"
+          },
+          "unassignedMattermostLinks": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/UnassignedMessageInput"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unassignedmattermostlinks"
           }
         },
         "required": [
@@ -338,9 +324,28 @@
       "JiraLink": {
         "additionalProperties": false,
         "properties": {
+          "id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
           "key": {
             "title": "Key",
             "type": "string"
+          },
+          "mattermostLinks": {
+            "items": {
+              "$ref": "#/components/schemas/MessageLink"
+            },
+            "title": "Mattermostlinks",
+            "type": "array"
+          },
+          "position": {
+            "minimum": 0.0,
+            "title": "Position",
+            "type": "integer"
           },
           "url": {
             "maxLength": 2048,
@@ -350,10 +355,37 @@
           }
         },
         "required": [
+          "id",
           "key",
-          "url"
+          "url",
+          "position",
+          "mattermostLinks"
         ],
         "title": "JiraLink",
+        "type": "object"
+      },
+      "JiraLinkInput": {
+        "additionalProperties": false,
+        "properties": {
+          "mattermostLinks": {
+            "items": {
+              "$ref": "#/components/schemas/MessageLinkInput"
+            },
+            "maxItems": 20,
+            "title": "Mattermostlinks",
+            "type": "array"
+          },
+          "url": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "JiraLinkInput",
         "type": "object"
       },
       "MessageLink": {
@@ -479,6 +511,36 @@
           "expectedBoardRevision"
         ],
         "title": "ReorderColumns",
+        "type": "object"
+      },
+      "UnassignedMessageInput": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "id"
+        ],
+        "title": "UnassignedMessageInput",
         "type": "object"
       }
     }

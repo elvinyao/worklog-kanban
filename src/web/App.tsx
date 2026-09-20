@@ -20,7 +20,7 @@ export function App(){
   start();window.addEventListener('pagehide',hide);window.addEventListener('pageshow',show);
   return()=>{hide();window.removeEventListener('pagehide',hide);window.removeEventListener('pageshow',show);};
  },[]);
- const resources=useMemo<Resource[]>(()=>snapshot?.cards.flatMap(card=>[...(card.jira?[{kind:'jira' as const,id:card.jira.key,url:card.jira.url}]:[]),...card.mattermostLinks.map(link=>({kind:'mattermost' as const,id:link.postId,team:link.team,url:link.url}))])??[],[snapshot]);
+ const resources=useMemo<Resource[]>(()=>snapshot?.cards.flatMap(card=>[...card.jiraLinks.flatMap(jira=>[{kind:'jira' as const,id:jira.key,url:jira.url},...jira.mattermostLinks.map(link=>({kind:'mattermost' as const,id:link.postId,team:link.team,url:link.url}))]),...card.unassignedMattermostLinks.map(link=>({kind:'mattermost' as const,id:link.postId,team:link.team,url:link.url}))])??[],[snapshot]);
  const accept=(value:Snapshot)=>shared.current?.accept(value);const reload=()=>shared.current?.reload();
  const card=selection?.kind==='card'?snapshot?.cards.find(item=>item.id===selection.id):undefined;
  const close=()=>{
