@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ -f /run/worklog-host-ca.crt ]; then
+  openssl x509 -in /run/worklog-host-ca.crt -noout
+  cp /run/worklog-host-ca.crt /usr/local/share/ca-certificates/worklog-host.crt
+  update-ca-certificates >/dev/null
+  export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+  export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
+  export PIP_CERT="$SSL_CERT_FILE"
+  export NODE_EXTRA_CA_CERTS="$SSL_CERT_FILE"
+  export npm_config_cafile="$SSL_CERT_FILE"
+fi
+
 if [ ! -x /opt/venv/bin/python ]; then
   /usr/local/bin/python -m venv /opt/venv
 fi

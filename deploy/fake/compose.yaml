@@ -1,0 +1,60 @@
+name: worklog-kanban-fake
+x-runtime: &runtime
+  image: ${WORKLOG_FAKE_IMAGE:-worklog-kanban-fake:local}
+  init: true
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  stop_grace_period: 15s
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+x-health: &health
+  interval: 3s
+  timeout: 3s
+  start_period: 5s
+  retries: 10
+services:
+  board:
+    <<: *runtime
+    build:
+      context: ../..
+      dockerfile: docker/legacy.Dockerfile
+      target: app
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python@sha256:933b46a028fd786c9c3d426ebabc237e29a15912231ea8de576e95f0e4f41a4c}
+        NODE_IMAGE: ${NODE_IMAGE:-node@sha256:6dac556d980b7f0e5498d08f08cee0ca67798b4ad6c23964a9214920e67758d0}
+    environment:
+      WORKLOG_DATABASE: /data/board.sqlite3
+    volumes:
+      - board-data:/data
+    ports:
+      - "127.0.0.1:4173:4173"
+    healthcheck:
+      <<: *health
+      test: [CMD, python, -m, docker.healthcheck, board]
+  jira:
+    <<: *runtime
+    command: [python, -m, uvicorn, "dummy.jira:create_app", --factory, --host, "0.0.0.0", --port, "4180", --workers, "1", --no-access-log, --no-proxy-headers, --log-level, warning]
+    ports:
+      - "127.0.0.1:4180:4180"
+    healthcheck:
+      <<: *health
+      test: [CMD, python, -m, docker.healthcheck, jira]
+  mattermost:
+    <<: *runtime
+    command: [python, -m, uvicorn, "dummy.mattermost:create_app", --factory, --host, "0.0.0.0", --port, "4181", --workers, "1", --no-access-log, --no-proxy-headers, --log-level, warning]
+    ports:
+      - "127.0.0.1:4181:4181"
+    healthcheck:
+      <<: *health
+      test: [CMD, python, -m, docker.healthcheck, mattermost]
+volumes:
+  board-data:

@@ -1,0 +1,25 @@
+# Production build context: no fake services, debug tools, local config or data.
+**
+!Dockerfile
+!package.json
+!package-lock.json
+!requirements/
+!requirements/runtime.txt
+!app/
+!app/**
+!src/
+!src/**
+src/dummy/
+src/probe/
+!scripts/
+!scripts/build.mjs
+!tools/
+!tools/__init__.py
+!tools/config.py
+!tools/package.py
+!docker/
+!docker/__init__.py
+!docker/healthcheck.py
+**/__pycache__
+**/*.pyc
+**/.DS_Store

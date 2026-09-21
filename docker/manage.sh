@@ -49,7 +49,7 @@ load_images
 IMAGE="${PROJECT}:local"; CANDIDATE="${PROJECT}:candidate"; OPS="${PROJECT}:operations"
 STATE_DIR="$ROOT/.tmp/docker-state/$PROJECT"
 SNAPSHOT="$STATE_DIR/compose.json"
-COMPOSE_FILE="$ROOT/compose.yaml"
+COMPOSE_FILE="$ROOT/deploy/fake/compose.yaml"
 if [ -f "$SNAPSHOT" ]; then COMPOSE_FILE="$SNAPSHOT"; fi
 compose() { WORKLOG_IMAGE="$IMAGE" docker compose --project-directory "$ROOT" --env-file "$ROOT/.agent/images.lock" --project-name "$PROJECT" -f "$COMPOSE_FILE" "$@"; }
 if [ "$ACTION" = status ]; then compose ps -a; echo "Data volume: ${PROJECT}_board-data"; exit; fi
@@ -87,7 +87,7 @@ trap release_lock EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 build_ops() {
-  docker build --quiet --target operations --build-arg "PYTHON_IMAGE=$PYTHON_IMAGE" --build-arg "NODE_IMAGE=$NODE_IMAGE" -t "$OPS" -f "$ROOT/Dockerfile" "$ROOT" >/dev/null
+  docker build --quiet --target operations --build-arg "PYTHON_IMAGE=$PYTHON_IMAGE" --build-arg "NODE_IMAGE=$NODE_IMAGE" -t "$OPS" -f "$ROOT/docker/legacy.Dockerfile" "$ROOT" >/dev/null
 }
 settings() {
   docker run --rm -i --init --network none --read-only --tmpfs /tmp --user 0:0 -v "$ROOT:/workspace" -w /workspace --entrypoint python "$OPS" \
@@ -133,7 +133,7 @@ deploy() {
     echo "Building $mode deployment in Docker..."
     BUILD_ARGS=(--target app)
     if [ "$mode" = production ]; then BUILD_ARGS=(--target production --secret "id=site_config,src=$STATE_DIR/candidate-sites.json" --build-arg "SITE_CONFIG_DIGEST=$(settings fingerprint)"); fi
-    docker build "${BUILD_ARGS[@]}" --build-arg "PYTHON_IMAGE=$PYTHON_IMAGE" --build-arg "NODE_IMAGE=$NODE_IMAGE" -t "$CANDIDATE" -f "$ROOT/Dockerfile" "$ROOT" || return 1
+    docker build "${BUILD_ARGS[@]}" --build-arg "PYTHON_IMAGE=$PYTHON_IMAGE" --build-arg "NODE_IMAGE=$NODE_IMAGE" -t "$CANDIDATE" -f "$ROOT/docker/legacy.Dockerfile" "$ROOT" || return 1
     docker run --rm -i --init --network none --read-only --tmpfs /tmp --entrypoint python "$CANDIDATE" /opt/worklog/docker/preflight.py || return 1
     docker tag "$CANDIDATE" "$IMAGE" || return 1
   fi
@@ -147,7 +147,7 @@ case "$ACTION" in
   start) deploy false ;;
   update)
     if [ "$LOCAL" = false ]; then
-      docker build --target source-tools --build-arg "PYTHON_IMAGE=$PYTHON_IMAGE" --build-arg "NODE_IMAGE=$NODE_IMAGE" -t "${PROJECT}:source-tools" -f "$ROOT/Dockerfile" "$ROOT"
+      docker build --target source-tools --build-arg "PYTHON_IMAGE=$PYTHON_IMAGE" --build-arg "NODE_IMAGE=$NODE_IMAGE" -t "${PROJECT}:source-tools" -f "$ROOT/docker/legacy.Dockerfile" "$ROOT"
       docker run --rm -i --init -v "$ROOT:/workspace" -w /workspace "${PROJECT}:source-tools"
       load_images
     fi
