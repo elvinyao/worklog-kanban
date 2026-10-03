@@ -27,6 +27,26 @@ def archive(client,board,ids=None):
     return response.json(),data
 
 
+def test_archive_revision_ignores_card_edits_and_tracks_metadata_and_restore(client):
+    before=prepare(client)
+    assert before['archiveRevision']==0
+    result,_=archive(client,before)
+    archive_revision=result['board']['revision']
+    assert result['board']['archiveRevision']==archive_revision
+    card=result['board']['cards'][0]
+    edited=client.patch('/api/cards/'+card['id'],headers=HEADERS,json={'expectedVersion':card['version'],'notes':'Later work'}).json()
+    assert edited['revision']>archive_revision and edited['archiveRevision']==archive_revision
+    renamed=client.patch('/api/archives/'+result['archiveId'],headers=HEADERS,json={'expectedMetadataVersion':1,'name':'Renamed'}).json()
+    assert renamed['board']['archiveRevision']==renamed['board']['revision']>archive_revision
+    restored=client.post('/api/archives/'+result['archiveId']+'/restore',headers=HEADERS,json={
+        'requestId':uuid4().hex,'expectedBoardRevision':renamed['board']['revision'],
+        'cardIds':[before['cards'][-1]['id']],'targetColumnId':before['columns'][0]['id'],
+    }).json()
+    assert restored['board']['archiveRevision']==restored['board']['revision']>renamed['board']['archiveRevision']
+    client.app.state.store.initialize()
+    assert client.get('/api/board').json()['archiveRevision']==restored['board']['archiveRevision']
+
+
 def test_archive_is_atomic_frozen_and_replayed_with_latest_current(client):
     before=prepare(client);done=[c for c in before['cards'] if c['title'].startswith('done-')]
     result,data=archive(client,before,[done[0]['id']]);current=result['board']

@@ -18,8 +18,7 @@ Run commands from the repository root. Hosts are for inspection/editing; execute
 
 | Command | Purpose |
 | --- | --- |
-| `bash .agent/run.sh python -m pip install --require-hashes -r requirements/dev.txt` | Bootstrap a fresh Python volume. |
-| `bash .agent/run.sh python -m tools.sync_deps` | Synchronize dependency locks. |
+| `bash .agent/run.sh python -m tools.sync_deps` | Bootstrap or synchronize locked dependencies. |
 | `bash .agent/run.sh npm run build` | Build development assets before serving/testing. |
 | `bash .agent/run.sh python -m tools.dev` | Serve `http://board.localhost:4173`; no hot reload. |
 | `bash .agent/run.sh npm run check` | Check types, contracts, syntax, boundaries. |
@@ -33,7 +32,7 @@ Python: four-space indentation, snake_case. Match surrounding TypeScript formatt
 
 ## Testing Guidelines
 
-Use pytest `test_*.py`, Vitest `*.test.ts`, and Playwright `*.spec.ts`. Before E2E: `bash .agent/run.sh npm exec -- playwright install chromium`. Add regression coverage; no coverage threshold exists. Follow the development guide's scenarios and production-bundle caveats. CI does not run these suites.
+Use pytest `test_*.py`, Vitest `*.test.ts`, and Playwright `*.spec.ts`. Before E2E: `bash .agent/run.sh npm exec -- playwright install chromium`. Cover interrupted writes, dirty drafts, concurrent edits, and cancellation; no coverage threshold exists. Production tests use temporary bundles. CI runs checks and all suites before publishing; follow the development guide for targeted scenarios.
 
 ## Commit & Pull Request Guidelines
 

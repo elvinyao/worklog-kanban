@@ -55,7 +55,7 @@ class WriteCoordinator:
         self.lock = asyncio.Lock()
         self.tasks: set[asyncio.Task] = set()
 
-    async def run(self, operation: Callable[[], BoardSnapshot], action: str, source: str):
+    async def run(self, operation: Callable[[], BoardSnapshot | WriteResult], action: str, source: str):
         async def committed():
             async with self.lock:
                 result = await asyncio.to_thread(operation)

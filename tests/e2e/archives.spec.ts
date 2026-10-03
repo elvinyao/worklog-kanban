@@ -49,12 +49,29 @@ test('remote archival preserves an open dirty draft and blocks stale saves',asyn
  await page.getByRole('button',{name:'关闭详情',exact:true}).click();await page.getByRole('button',{name:'放弃修改并关闭',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
-test('archive submission retries the same operation after a lost response',async({page})=>{
- const {done}=await setup(page.context(),'重试归档');await page.goto(board);await page.getByRole('button',{name:'归档已完成任务',exact:true}).click();await chooseTasks(page,[done.title]);await page.getByLabel('归档名称',{exact:true}).fill('响应丢失仍只归档一次');
- const requests:string[]=[];let first=true;
- await page.route('**/api/archives',async route=>{if(route.request().method()!=='POST')return route.continue();requests.push(route.request().postDataJSON().requestId);if(first){first=false;const response=await route.fetch({url:'http://127.0.0.1:4173/api/archives',headers:{...route.request().headers(),Host:'board.localhost:4173'}});expect(response.ok()).toBe(true);await route.abort('failed');}else await route.continue();});
- await page.getByRole('button',{name:'归档 1 项',exact:true}).click();await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();await expect(page.getByLabel('归档名称',{exact:true})).toHaveValue('响应丢失仍只归档一次');
- await page.getByRole('button',{name:'归档 1 项',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);expect(requests).toHaveLength(2);expect(requests[0]).toBe(requests[1]);
+test('default archive input stays protected and retries keep their identity after a lost response and 429',async({page})=>{
+ await setup(page.context(),'重试归档');const before=await sharedRead(page.context());await page.goto(board);
+ await page.getByRole('link',{name:/Archives/}).click();await page.getByRole('link',{name:'Current',exact:true}).click();
+ await page.getByRole('button',{name:'归档已完成任务',exact:true}).click();
+ const originalName=await page.getByLabel('归档名称',{exact:true}).inputValue();
+ expect(await page.evaluate(()=>!window.dispatchEvent(new Event('beforeunload',{cancelable:true})))).toBe(false);
+ const requests:unknown[]=[];
+ await page.route('**/api/archives',async route=>{
+  if(route.request().method()!=='POST')return route.continue();requests.push(route.request().postDataJSON());
+  if(requests.length===1){const response=await route.fetch({url:'http://127.0.0.1:4173/api/archives',headers:{...route.request().headers(),Host:'board.localhost:4173'}});expect(response.ok()).toBe(true);await route.abort('failed');}
+  else if(requests.length===2)await route.fulfill({status:429,contentType:'application/json',body:JSON.stringify({code:'rate_limited'})});
+  else await route.continue();
+ });
+ const submit=page.getByRole('button',{name:/^归档 \d+ 项$/});
+ await submit.click();await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();await expect(page.getByLabel('归档名称',{exact:true})).toHaveValue(originalName);
+ expect(await page.evaluate(()=>!window.dispatchEvent(new Event('beforeunload',{cancelable:true})))).toBe(true);
+ const closing=page.waitForEvent('dialog');const escape=page.keyboard.press('Escape');const closePrompt=await closing;expect(closePrompt.message()).toBe('有未保存的修改。');await closePrompt.dismiss();await escape;
+ await expect(page.getByRole('dialog')).toBeVisible();
+ const leaving=page.waitForEvent('dialog');const back=page.goBack();const navigationPrompt=await leaving;expect(navigationPrompt.message()).toBe('有未保存的修改。');await navigationPrompt.dismiss();await back;
+ await expect(page).toHaveURL(board+'/');await expect(page.getByRole('dialog')).toBeVisible();
+ await submit.click();await expect(page.getByRole('dialog').getByRole('alert')).toContainText('暂时无法保存或读取');await expect(submit).toBeEnabled();await expect(page.getByLabel('归档名称',{exact:true})).toBeDisabled();
+ await submit.click();await expect(page.getByRole('dialog')).toHaveCount(0);expect(requests).toHaveLength(3);expect(requests[0]).toEqual(requests[1]);expect(requests[1]).toEqual(requests[2]);
+ expect((await sharedRead(page.context())).archiveCount).toBe(before.archiveCount+1);
 });
 
 test('remote edit then archive keeps the last visible card and declining navigation retains a draft',async({page})=>{
@@ -67,7 +84,7 @@ test('remote edit then archive keeps the last visible card and declining navigat
 test('changed board requires review and completion columns can be configured',async({page})=>{
  const {done,ids}=await setup(page.context(),'重新核对');await page.goto(board);await page.getByRole('button',{name:'归档已完成任务',exact:true}).click();await chooseTasks(page,[done.title]);
  await seedCard(page.context(),'远端新增',null,[],ids[0]);await expect(page.getByRole('button',{name:'重新核对任务',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'归档 1 项',exact:true})).toBeDisabled();
- await page.getByRole('button',{name:'重新核对任务',exact:true}).click();await expect(page.getByRole('button',{name:'归档 1 项',exact:true})).toBeEnabled();await page.getByRole('button',{name:'取消',exact:true}).click();
+ await page.getByRole('button',{name:'重新核对任务',exact:true}).click();await expect(page.getByRole('button',{name:'归档 1 项',exact:true})).toBeEnabled();page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'取消',exact:true}).click();
  await page.getByRole('button',{name:'管理列',exact:true}).click();const checkbox=page.getByRole('checkbox',{name:'将重新核对2设为完成列',exact:true});await expect(checkbox).toBeChecked();await checkbox.click();await expect(checkbox).not.toBeChecked();await expect.poll(async()=>(await sharedRead(page.context())).columns.find(c=>c.id===ids[2])!.isDone).toBe(false);
 });
 
@@ -80,11 +97,39 @@ test('archives load previews only for the visible history and the list reads no 
  const listJ=(await inspect(jc)).requests.length,listM=(await inspect(mc)).requests.length;await page.getByRole('button',{name:'重新同步',exact:true}).click();await expect(page.locator('.archive-row').filter({hasText:'隔离历史'})).toBeVisible();expect((await inspect(jc)).requests.length).toBe(listJ);expect((await inspect(mc)).requests.length).toBe(listM);
 });
 
-test('restore retries its original request after losing the response',async({page})=>{
+test('restore retries its original request after losing the response and a rejected replay',async({page})=>{
  const {done}=await setup(page.context(),'恢复重试');const archive=await archiveApi(page.context(),done.id,'恢复响应丢失');await page.goto(board+'/#/archives/'+archive.archiveId);
- await page.getByRole('button',{name:'恢复任务',exact:true}).click();await chooseTasks(page,[done.title]);const requests:string[]=[];let first=true;
- await page.route('**/api/archives/*/restore',async route=>{requests.push(route.request().postDataJSON().requestId);if(first){first=false;const response=await route.fetch({url:route.request().url().replace('board.localhost','127.0.0.1'),headers:{...route.request().headers(),Host:'board.localhost:4173'}});expect(response.ok()).toBe(true);await route.abort('failed');}else await route.continue();});
- await page.getByRole('button',{name:'恢复 1 项到 Current',exact:true}).click();await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();await page.getByRole('button',{name:'恢复 1 项到 Current',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);expect(requests).toHaveLength(2);expect(requests[0]).toBe(requests[1]);expect((await sharedRead(page.context())).cards.filter(card=>card.title===done.title)).toHaveLength(1);
+ await page.getByRole('button',{name:'恢复任务',exact:true}).click();await chooseTasks(page,[done.title]);const requests:unknown[]=[];
+ await page.route('**/api/archives/*/restore',async route=>{
+  requests.push(route.request().postDataJSON());
+  if(requests.length===1){const response=await route.fetch({url:route.request().url().replace('board.localhost','127.0.0.1'),headers:{...route.request().headers(),Host:'board.localhost:4173'}});expect(response.ok()).toBe(true);await route.abort('failed');}
+  else if(requests.length===2)await route.fulfill({status:429,contentType:'application/json',body:JSON.stringify({code:'rate_limited'})});
+  else await route.continue();
+ });
+ const submit=page.getByRole('button',{name:'恢复 1 项到 Current',exact:true});
+ await submit.click();await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();
+ await submit.click();await expect(page.getByRole('dialog').getByRole('alert')).toContainText('暂时无法保存或读取');await expect(submit).toBeEnabled();await expect(page.getByLabel('恢复到列')).toBeDisabled();
+ await submit.click();await expect(page.getByRole('dialog')).toHaveCount(0);expect(requests).toHaveLength(3);expect(requests[0]).toEqual(requests[1]);expect(requests[1]).toEqual(requests[2]);expect((await sharedRead(page.context())).cards.filter(card=>card.title===done.title)).toHaveLength(1);
+});
+
+test('rename still reviews a version conflict after its successful response is lost',async({page})=>{
+ const snapshot=await sharedRead(page.context());const done=snapshot.columns.find(column=>column.isDone)!;
+ const card=await seedCard(page.context(),'重命名结果确认任务',null,[],done.id);const archive=await archiveApi(page.context(),card.id,'重命名结果确认');
+ await page.goto(board+'/#/archives');await page.getByRole('searchbox',{name:'搜索归档'}).fill('重命名结果确认');
+ await page.locator('.archive-row').filter({hasText:'重命名结果确认'}).getByRole('button',{name:'重命名',exact:true}).click();
+ await page.getByLabel('归档名称',{exact:true}).fill('重命名结果确认 updated');
+ const versions:number[]=[];
+ await page.route('**/api/archives/'+archive.archiveId,async route=>{
+  if(route.request().method()!=='PATCH')return route.continue();versions.push(route.request().postDataJSON().expectedMetadataVersion);
+  if(versions.length===1){const response=await route.fetch({url:route.request().url().replace('board.localhost','127.0.0.1'),headers:{...route.request().headers(),Host:'board.localhost:4173'}});expect(response.ok()).toBe(true);await route.abort('failed');}
+  else await route.continue();
+ });
+ const submit=page.getByRole('button',{name:'保存归档名称',exact:true});
+ await submit.click();await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();
+ await submit.click();await expect(page.getByRole('dialog').getByRole('alert')).toContainText('共享内容已更新');
+ await expect(page.getByLabel('归档名称',{exact:true})).toBeEnabled();await expect(submit).toBeDisabled();
+ await page.getByRole('dialog').getByRole('button',{name:'重新同步',exact:true}).click();await expect(submit).toBeEnabled();
+ await submit.click();await expect(page.getByRole('dialog')).toHaveCount(0);expect(versions).toEqual([1,1,2]);
 });
 
 test('archive pagination and scroll survive opening a history and going back',async({page})=>{

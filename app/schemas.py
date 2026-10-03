@@ -32,6 +32,7 @@ class UnassignedMessageInput(MessageLinkInput):
 
 
 class CreateCard(SharedModel):
+    requestId: Identifier | None = None
     title: Title
     columnId: Identifier
     notes: Notes = ''
@@ -132,6 +133,7 @@ class BoardSnapshot(SharedModel):
     columns: list[Column]
     cards: list[Card]
     archiveCount: Annotated[int, Field(ge=0)] = 0
+    archiveRevision: Revision = 0
 
 
 class ArchiveSelection(SharedModel):

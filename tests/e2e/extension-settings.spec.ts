@@ -11,6 +11,28 @@ async function openSettings(context:BrowserContext){
 }
 async function save(page:Page){await page.getByRole('button',{name:'保存设置',exact:true}).click();await expect(page.getByRole('status')).toHaveText('已保存。请刷新看板以应用新地址。');}
 
+test('a failed initial settings read can be retried without reloading the extension',async({alice})=>{
+ const worker=alice.serviceWorkers()[0]??await alice.waitForEvent('serviceworker');
+ const page=await alice.newPage();
+ await page.addInitScript(()=>{
+  const send=chrome.runtime.sendMessage.bind(chrome.runtime);let fail=true;
+  Object.defineProperty(chrome.runtime,'sendMessage',{value:(message:{op:string})=>{
+   if(message.op==='settings.get'&&fail){fail=false;return Promise.reject(new Error('Transient connection failure'));}
+   return send(message);
+  }});
+ });
+ await page.goto(new URL('options.html',worker.url()).href);
+ await expect(page.getByRole('status')).toHaveText('无法读取扩展设置。请重试加载。');
+ await expect(page.getByRole('button',{name:'保存设置',exact:true})).toBeDisabled();
+ await expect(page.getByRole('button',{name:'恢复部署默认',exact:true})).toBeDisabled();
+ await page.getByRole('button',{name:'重试加载',exact:true}).click();
+ await expect(page.getByRole('button',{name:'保存设置',exact:true})).toBeEnabled();
+ await expect(page.getByRole('button',{name:'重试加载',exact:true})).toBeHidden();
+ await expect(page.getByLabel('看板地址',{exact:true})).toHaveValue(board);
+ await page.getByLabel('Jira 地址',{exact:true}).fill(jira+'/recovered');await save(page);
+ expect(await worker.evaluate(()=>chrome.storage.local.get(null))).toEqual({[SETTINGS_KEY]:{boardOrigin:board,jiraBaseUrl:jira+'/recovered',mattermostBaseUrl:mm}});
+});
+
 test('settings preserve defaults, validate input, survive reload and keep profiles separate',async({alice,bob})=>{
  const {page,worker}=await openSettings(alice);
  await expect(page.getByLabel('看板地址',{exact:true})).toHaveValue(board);await expect(page.getByLabel('Jira 地址',{exact:true})).toHaveValue(jira);

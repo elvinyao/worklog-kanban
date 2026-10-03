@@ -37,6 +37,22 @@ test('actual responses distinguish incomplete pagination, HTML, login and rate l
   }
 });
 
+test('a bounded Jira scan keeps the summary and explains that the latest comment is unknown',async({alice})=>{
+ const control=await login(alice,jira,'alice');
+ const status=await control.evaluate(async()=>{
+  const response=await fetch('fault',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fault:'none',page_size:1})});
+  return response.status;
+ });
+ expect(status).toBe(200);
+ const start=(await inspect(control)).requests.length;
+ const page=await alice.newPage();await page.goto(board+'/probe/');await expect(page.getByRole('status')).toHaveText('已连接');
+ const result=await read(page,'Jira');
+ expect(result).toMatchObject({ok:true,data:{kind:'jira',key:'DEMO-1',comment:null,commentUnavailable:true}});
+ await expect(page.getByText('评论未完整读取，请打开原站查看最新评论。',{exact:true})).toBeVisible();
+ const requests=(await inspect(control)).requests.slice(start);
+ expect(requests.filter(request=>request.path.endsWith('/DEMO-1/comment'))).toHaveLength(10);
+});
+
 test('Mattermost reads only a post and its metadata; failures degrade locally',async({alice,bob})=>{
   const control=await login(alice,mm,'alice');await login(bob,mm,'bob');
   const page=await alice.newPage();await page.goto(board+'/probe/');await expect(page.getByRole('status')).toHaveText('已连接');

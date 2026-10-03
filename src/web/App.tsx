@@ -35,8 +35,9 @@ export function App(){
   window.addEventListener('hashchange',changed);return()=>window.removeEventListener('hashchange',changed);
  },[t]);
  const navigate=(hash:string)=>{
-  if(dirty.current&&!window.confirm(t('card.unsavedChanges')))return;
+  if(dirty.current&&!window.confirm(t('card.unsavedChanges')))return false;
   dirty.current=false;setSelection(null);setNotice(undefined);window.history.pushState(null,'',hash||location.pathname);routeRef.current=hash;setRoute(hash);
+  return true;
  };
  const link=(event:MouseEvent<HTMLAnchorElement>,hash:string)=>{if(!event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey){event.preventDefault();navigate(hash);}};
  const accept=(value:Snapshot)=>shared.current?.accept(value);
@@ -45,7 +46,7 @@ export function App(){
   if(!archiveId)return;const abort=new AbortController();setArchiveError('');
   void api.archive(archiveId,abort.signal).then(value=>{if(!abort.signal.aborted)setArchive(value);}).catch(reason=>{if(!abort.signal.aborted)setArchiveError(errorText(reason));});
   return()=>abort.abort();
- },[archiveId,snapshot?.revision,readEpoch]);
+ },[archiveId,snapshot?.archiveRevision,readEpoch]);
  const lastCard=useRef<Card|undefined>(undefined);
  const card=selection?.kind==='card'?(snapshot?.cards.find(item=>item.id===selection.card.id)??(lastCard.current?.id===selection.card.id?lastCard.current:selection.card)):undefined;
  lastCard.current=card;
@@ -69,18 +70,18 @@ export function App(){
    {showPreviews&&!detailOpen&&<PreviewToolbar/>}
    {snapshot?<Board key="current" snapshot={snapshot} showPreviews={showPreviews} open={card=>setSelection({kind:'card',card})} create={columnId=>setSelection({kind:'new',columnId})} accept={accept} reload={reload} focusRequest={focusRequest}/>:<p className="loading">{t('board.loading')}</p>}
   </>}
-  <ArchiveList active={listView} revision={`${snapshot?.revision??0}:${readEpoch}`} navigate={navigate} rename={archive=>setSelection({kind:'rename',archive})}/>
+  <ArchiveList active={listView} revision={`${snapshot?.archiveRevision??0}:${readEpoch}`} navigate={navigate} rename={archive=>setSelection({kind:'rename',archive})}/>
   {archiveId&&<>
    <div className="board-toolbar archive-toolbar"><div><a className="back-link" href="#/archives" onClick={event=>link(event,'#/archives')}>← {t('archive.list')}</a><h2>{history?.name??t('archive.nav')}</h2>{history&&<p className="hint">{date(history.createdAt)} · {t('archive.readonly')}</p>}</div><div className="row-actions"><PreviewToggle enabled={showPreviews} change={setShowPreviews}/><button className="primary" disabled={!history||!snapshot} onClick={()=>setSelection({kind:'restore'})}>{t('archive.restore')}</button></div></div>
    {archiveError&&<div role="alert" className="move-error error">{t(archiveError)} <button onClick={reload}>{t('sync.refresh')}</button></div>}
    {history?<>{history.description&&<p className="archive-board-description">{history.description}</p>}{showPreviews&&<p className="archive-live hint">{t('archive.live')}</p>}{showPreviews&&!detailOpen&&<PreviewToolbar/>}<div className="archive-board"><Board key={history.id} snapshot={history.snapshot} readOnly showPreviews={showPreviews} open={card=>setSelection({kind:'archivedCard',card})} create={()=>{}} accept={()=>{}} reload={reload} focusRequest={null}/></div></>:!archiveError&&<p className="loading">{t('board.loading')}</p>}
   </>}
   <footer className="app-footer"><span>{t('app.sharedNotesFooter')}</span><span>{t('app.sourceContentFooter')}</span></footer>
-  {snapshot&&selection?.kind==='columns'&&<ColumnDialog snapshot={snapshot} accept={accept} reload={reload} close={close}/>}
+  {snapshot&&selection?.kind==='columns'&&<ColumnDialog snapshot={snapshot} accept={accept} reload={reload} close={close} onDirtyChange={dirtyChanged}/>}
   {snapshot&&(selection?.kind==='new'||(selection?.kind==='card'&&card))&&<CardDialog key={selection.kind==='card'?selection.card.id:'new'} card={card} columnId={selection.kind==='new'?selection.columnId:card!.columnId} missing={!!card&&!snapshot.cards.some(item=>item.id===card.id)} onDirtyChange={dirtyChanged} snapshot={snapshot} accept={accept} reload={reload} close={close}/>}
-  {snapshot&&selection?.kind==='createArchive'&&<CreateArchiveDialog snapshot={snapshot} reload={reload} close={close} done={(result,count)=>{accept(result.board);close();setNotice({key:'archive.created',count,archiveId:result.archiveId});}}/>}
-  {snapshot&&history&&selection?.kind==='restore'&&<RestoreArchiveDialog archive={history} snapshot={snapshot} reload={reload} close={close} done={(result,count)=>{accept(result.board);setArchive({...history,restoredCards:{...history.restoredCards,...result.restoredCards}});close();setNotice({key:'archive.restored',count});}} openCurrent={id=>{const item=snapshot.cards.find(card=>card.id===id);if(item){navigate('');setSelection({kind:'card',card:item});}else reload();}}/>}
-  {selection?.kind==='rename'&&<RenameArchiveDialog archive={selection.archive} close={close} reload={reload} done={result=>{accept(result.board);close();reload();}}/>}
+  {snapshot&&selection?.kind==='createArchive'&&<CreateArchiveDialog snapshot={snapshot} reload={reload} close={close} onDirtyChange={dirtyChanged} done={(result,count)=>{accept(result.board);close();setNotice({key:'archive.created',count,archiveId:result.archiveId});}}/>}
+  {snapshot&&history&&selection?.kind==='restore'&&<RestoreArchiveDialog archive={history} snapshot={snapshot} reload={reload} close={close} onDirtyChange={dirtyChanged} done={(result,count)=>{accept(result.board);setReadEpoch(value=>value+1);close();setNotice({key:'archive.restored',count});}} openCurrent={id=>{const item=snapshot.cards.find(card=>card.id===id);if(item){if(navigate(''))setSelection({kind:'card',card:item});}else reload();}}/>}
+  {selection?.kind==='rename'&&<RenameArchiveDialog archive={selection.archive} close={close} reload={reload} onDirtyChange={dirtyChanged} done={result=>{accept(result.board);close();reload();}}/>}
   {archivedCard&&<ArchiveCardDialog card={archivedCard} close={close}/>}
  </PreviewProvider>;
 }

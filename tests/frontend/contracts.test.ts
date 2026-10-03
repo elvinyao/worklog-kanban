@@ -76,6 +76,16 @@ it('accepts only fixed preview operations and identifiers', () => {
   ]) expect(() => parseRequest(invalid)).toThrow();
 });
 
+it('marks incomplete Jira comments explicitly without accepting a purported latest comment',()=>{
+ const config=validateConfig(corpus.config);
+ const data={kind:'jira',key:'DEMO-1',url:config.jiraBaseUrl+'/browse/DEMO-1',summary:'Summary',assignee:null,status:'Open',comment:null,commentUnavailable:true};
+ const reply={version:1,id:'partial',ok:true,data};
+ expect(parseReply(reply,config)).toEqual(reply);
+ for(const patch of [{commentUnavailable:false},{commentUnavailable:'true'},{comment:{author:'Author',created:'2026-09-18T00:00:00Z',excerpt:'Cannot claim latest'}}]){
+  expect(()=>parseReply({...reply,data:{...data,...patch}},config)).toThrow();
+ }
+});
+
 it('validates configured sources before any request', () => {
   expect(validateConfig(corpus.config)).toEqual(corpus.config);
   for (const patch of [

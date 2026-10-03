@@ -30,6 +30,11 @@ CREATE TABLE IF NOT EXISTS audit_events (
  id INTEGER PRIMARY KEY, revision INTEGER NOT NULL UNIQUE, timestamp TEXT NOT NULL,
  action TEXT NOT NULL, resource_id TEXT NOT NULL, source_ip TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS audit_action_revision ON audit_events(action,revision);
+-- Keep completed create requests after their cards are archived or moved.
+CREATE TABLE IF NOT EXISTS create_card_requests (
+ request_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, card_id TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS board_archives (
  id TEXT PRIMARY KEY, name TEXT NOT NULL CHECK(length(trim(name))>0), description TEXT NOT NULL,
  created_at TEXT NOT NULL, source_revision INTEGER NOT NULL, metadata_version INTEGER NOT NULL,

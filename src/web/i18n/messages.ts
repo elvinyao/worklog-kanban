@@ -1,6 +1,15 @@
 // Stable English keys; each value is [Simplified Chinese, English, Japanese].
 // UI text only. Shared card data and external content are never translation keys.
 export const messages = {
+  "columns.deletedDraft": ["列“{column}”已删除，未保存的列名仍保留。可复制后丢弃此草稿。", "Column “{column}” was deleted. Your unsaved name is preserved below; copy it before discarding the draft.", "列「{column}」は削除されました。未保存の列名は保持されています。必要に応じてコピーしてから破棄してください。"],
+  "columns.deletedDraftLabel": ["已删除列的名称草稿：{column}", "Name draft for deleted column: {column}", "削除された列の名前の下書き：{column}"],
+  "columns.discardDraft": ["丢弃此草稿", "Discard this draft", "この下書きを破棄"],
+  "preview.commentsUnavailable": ["评论未完整读取，请打开原站查看最新评论。", "Comments could not be fully loaded. Open the source site for the latest comment.", "コメントをすべて取得できませんでした。最新のコメントは元のサイトで確認してください。"],
+  "extension.retryLoad": ["重试加载", "Retry loading", "読み込みを再試行"],
+  "extension.readFailed": ["无法读取扩展设置。请重试加载。", "Could not read extension settings. Retry loading.", "拡張機能の設定を読み込めませんでした。読み込みを再試行してください。"],
+  "error.requestTimedOut": ["请求超时，结果尚未确认。请重新同步或重试同一次操作。", "The request timed out and its result is unconfirmed. Sync again or retry the same operation.", "リクエストがタイムアウトし、結果を確認できません。再同期するか、同じ操作を再試行してください。"],
+  "card.createUncertain": ["卡片可能已创建。请重试确认结果，不会重复创建；确认前保留原输入。", "The card may already exist. Retry to confirm without creating a duplicate; your original input is preserved.", "カードが作成済みの可能性があります。再試行しても重複は作成されません。確認まで入力内容を保持します。"],
+  "card.retryCreate": ["重试并确认创建结果", "Retry and confirm creation", "再試行して作成結果を確認"],
   "common.close": ["关闭", "Close", "閉じる"],
   "common.cancel": ["取消", "Cancel", "キャンセル"],
   "archive.current": ["Current", "Current", "Current"],

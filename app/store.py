@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+import hashlib
+import json
 import sqlite3
 import uuid
 
@@ -9,6 +11,7 @@ from app import associations
 from app.errors import StoreError
 from app.resource_links import parse_resource
 from app.schemas import BoardSnapshot, ChangeColumn, CreateCard, DeleteColumn, EditCard, MoveCard, ReorderColumns
+from app.write_result import WriteResult
 
 
 class Store:
@@ -86,7 +89,8 @@ class Store:
         for row in connection.execute('SELECT cards.* FROM cards JOIN columns ON cards.column_id=columns.id ORDER BY columns.position,cards.position'):
             cards.append({'id':row['id'],'columnId':row['column_id'],'title':row['title'],'notes':row['notes'],'position':row['position'],'version':row['version'],'jiraLinks':tickets.get(row['id'],[]),'unassignedMattermostLinks':unassigned.get(row['id'],[])})
         count=connection.execute('SELECT COUNT(*) FROM board_archives').fetchone()[0]
-        return BoardSnapshot(revision=revision,columns=columns,cards=cards,archiveCount=count)
+        archive_revision=connection.execute("SELECT COALESCE(MAX(revision),0) FROM audit_events WHERE action IN ('archive.create','archive.rename','archive.restore')").fetchone()[0]
+        return BoardSnapshot(revision=revision,columns=columns,cards=cards,archiveCount=count,archiveRevision=archive_revision)
 
     @staticmethod
     def _record(connection, action, resource_id, source_ip):
@@ -94,15 +98,25 @@ class Store:
         connection.execute('INSERT INTO audit_events (revision,timestamp,action,resource_id,source_ip) VALUES (?,?,?,?,?)',(revision,datetime.now(timezone.utc).isoformat(),action,resource_id,source_ip))
         return revision
 
-    def _write(self, action, resource_id, source_ip, operation):
+    def _write(self, action, resource_id, source_ip, operation, *, create_request=None):
         try:
             with self.connection() as connection:
                 connection.execute('BEGIN IMMEDIATE')
+                if create_request is not None:
+                    request_id, fingerprint = create_request
+                    previous = connection.execute('SELECT fingerprint FROM create_card_requests WHERE request_id=?', (request_id,)).fetchone()
+                    if previous is not None:
+                        if previous['fingerprint'] != fingerprint:
+                            raise StoreError('request_conflict')
+                        result = self._snapshot(connection)
+                        return WriteResult(result, result.revision, False)
                 operation(connection)
                 self._record(connection,action,resource_id,source_ip)
+                if create_request is not None:
+                    connection.execute('INSERT INTO create_card_requests (request_id,fingerprint,card_id) VALUES (?,?,?)', (request_id,fingerprint,resource_id))
                 result = self._snapshot(connection)
                 connection.commit()
-                return result
+                return WriteResult(result, result.revision, True) if create_request is not None else result
         except sqlite3.IntegrityError:
             raise StoreError('invalid_change') from None
         except sqlite3.OperationalError as error:
@@ -136,14 +150,18 @@ class Store:
         except ValueError:
             raise StoreError('invalid_link') from None
 
-    def create_card(self, data: CreateCard, source_ip: str):
+    def create_card(self, data: CreateCard, source_ip: str) -> BoardSnapshot | WriteResult:
         card_id = uuid.uuid4().hex
+        create_request = None
+        if data.requestId is not None:
+            payload = json.dumps(data.model_dump(exclude={'requestId'}), sort_keys=True, ensure_ascii=False)
+            create_request = (data.requestId, hashlib.sha256(payload.encode()).hexdigest())
         def operation(connection):
             self._column(connection,data.columnId)
             position = connection.execute('SELECT COUNT(*) FROM cards WHERE column_id=?', (data.columnId,)).fetchone()[0]
             connection.execute('INSERT INTO cards (id,title,notes,column_id,position,version) VALUES (?,?,?,?,?,?)', (card_id,data.title,data.notes,data.columnId,position,1))
             associations.replace(connection,card_id,data.jiraLinks,None,self._resource)
-        return self._write('card.create',card_id,source_ip,operation)
+        return self._write('card.create',card_id,source_ip,operation,create_request=create_request)
 
     def edit_card(self, card_id: str, data: EditCard, source_ip: str):
         def operation(connection):

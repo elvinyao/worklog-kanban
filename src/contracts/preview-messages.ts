@@ -12,6 +12,7 @@ export interface PreviewError {code:PreviewErrorCode;retryAfterMs?:number}
 export interface JiraPreview {
   kind:'jira'; key:string; url:string; summary:string; assignee:string|null; status:string;
   comment:{author:string;created:string;excerpt:string}|null;
+  commentUnavailable?:true;
 }
 export interface MattermostPreview {
   kind:'mattermost';postId:string;url:string;author:string;channel:string|null;createdAt:string;text:string;
@@ -62,7 +63,8 @@ export function parseReply(value:unknown, config:SiteConfig): PreviewReply {
     if (data.connected === true) exact(data,['connected']);
     else if (data.cancelled === true) exact(data,['cancelled']);
     else if (data.kind === 'jira') {
-      exact(data,['kind','key','url','summary','assignee','status','comment']);
+      exact(data,['kind','key','url','summary','assignee','status','comment',...('commentUnavailable' in data?['commentUnavailable']:[])]);
+      if('commentUnavailable' in data && (data.commentUnavailable!==true || data.comment!==null)) throw new Error('Invalid incomplete comments');
       text(data.key,200); text(data.url,2048); text(data.summary,2000); text(data.status,200);
       if (data.assignee !== null) text(data.assignee,500);
       const resource = parseResource('jira',data.url,config);

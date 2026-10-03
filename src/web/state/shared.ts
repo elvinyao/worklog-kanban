@@ -29,7 +29,11 @@ export class SharedBoard {
    if(this.closed||snapshot.revision<this.applied)return;
    this.applied=snapshot.revision;this.changed(snapshot);
  }
- reload(){if(!this.closed){this.refresh=true;this.read();}}
+ reload(){
+   if(this.closed)return;
+   this.controller?.abort();this.controller=undefined;
+   this.refresh=true;this.read();
+ }
  private read(){
    if(this.closed||this.controller||(!this.refresh&&this.wanted<=this.applied))return;
    this.refresh=false;
@@ -37,9 +41,10 @@ export class SharedBoard {
    const controller=new AbortController();this.controller=controller;
    let succeeded=false;
    void this.fetcher(controller.signal).then(snapshot=>{
-     if(this.closed)return;
+     if(this.closed||this.controller!==controller)return;
      this.accept(snapshot);succeeded=true;if(this.connected)this.status('sync.synced');
-   }).catch(()=>{if(!this.closed)this.status('sync.loadFailed');}).finally(()=>{
+   }).catch(()=>{if(!this.closed&&this.controller===controller)this.status('sync.loadFailed');}).finally(()=>{
+     if(this.controller!==controller)return;
      this.controller=undefined;
      if(succeeded||this.refresh||this.wanted>wantedAtStart)this.read();
    });

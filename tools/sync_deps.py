@@ -32,6 +32,9 @@ def main() -> None:
     for name in outdated():
         lock, marker = GROUPS[name]
         if name == 'python':
+            # Bootstrap empty environments and upgrade pip-tools itself from the
+            # hashed lock: pip-sync deliberately protects its own dependencies.
+            subprocess.run([sys.executable, '-m', 'pip', 'install', '--require-hashes', '-r', str(lock)], check=True)
             subprocess.run([sys.executable, '-m', 'piptools', 'sync', '--pip-args', '--require-hashes', str(lock)], check=True)
         else:
             subprocess.run(['npm', 'ci'], cwd=ROOT, check=True)

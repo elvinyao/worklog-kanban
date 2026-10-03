@@ -2,7 +2,22 @@ import { record, type SiteConfig } from '../contracts/config';
 import type { PreviewErrorCode } from '../contracts/preview-messages';
 
 export class ReadError extends Error {
-  constructor(public code:PreviewErrorCode,public retryAfterMs?:number) { super(code); }
+  constructor(public code:PreviewErrorCode,public retryAfterMs?:number,public status?:number) { super(code); }
+}
+export class BudgetExceeded extends Error {}
+
+// A local enrichment deadline may degrade a preview; a caller cancellation never may.
+export async function bounded<T>(signal:AbortSignal,budgetMs:number,operation:(signal:AbortSignal)=>Promise<T>):Promise<T> {
+  signal.throwIfAborted();
+  const controller=new AbortController();
+  const expired=new BudgetExceeded();
+  const timer=setTimeout(()=>controller.abort(expired),budgetMs);
+  try { return await operation(AbortSignal.any([signal,controller.signal])); }
+  catch(error) {
+    signal.throwIfAborted();
+    if(controller.signal.reason===expired) throw expired;
+    throw error;
+  } finally { clearTimeout(timer);controller.abort(); }
 }
 export const object = (value:unknown):Record<string,unknown> => { try{return record(value);}catch{throw new ReadError('protocol');} };
 export function string(value:unknown,max=20000):string {
@@ -20,7 +35,7 @@ export async function get(url:string,signal:AbortSignal):Promise<Response> {
   try { response=await fetch(url,{method:'GET',credentials:'include',cache:'no-store',redirect:'error',signal:AbortSignal.any([signal,AbortSignal.timeout(20000)])}); }
   catch(error) { signal.throwIfAborted(); throw new ReadError('network'); }
   const code = response.status === 401 ? 'login_required' : [403,404].includes(response.status) ? 'unavailable' : response.status === 429 ? 'rate_limited' : !response.ok ? 'network' : null;
-  if(code) { void response.body?.cancel(); throw new ReadError(code,code === 'rate_limited' ? retryAfter(response.headers.get('Retry-After')) : undefined); }
+  if(code) { void response.body?.cancel(); throw new ReadError(code,code === 'rate_limited' ? retryAfter(response.headers.get('Retry-After')) : undefined,response.status); }
   return response;
 }
 export async function bytes(response:Response,max:number,signal:AbortSignal):Promise<Uint8Array> {
@@ -59,7 +74,7 @@ export async function readJSON(url:string,signal:AbortSignal,config:SiteConfig):
 export async function optional<T>(operation:()=>Promise<T>,signal:AbortSignal):Promise<T|undefined> {
   try{return await operation();}catch(error){
     signal.throwIfAborted();
-    if(error instanceof ReadError && ['login_required','rate_limited'].includes(error.code)) throw error;
+    if(error instanceof ReadError && (['login_required','rate_limited'].includes(error.code)||error.status===403)) throw error;
     return undefined;
   }
 }

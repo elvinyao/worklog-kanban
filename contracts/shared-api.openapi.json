@@ -219,6 +219,12 @@
             "title": "Archivecount",
             "type": "integer"
           },
+          "archiveRevision": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Archiverevision",
+            "type": "integer"
+          },
           "cards": {
             "items": {
               "$ref": "#/components/schemas/Card"
@@ -461,6 +467,20 @@
             "maxLength": 20000,
             "title": "Notes",
             "type": "string"
+          },
+          "requestId": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestid"
           },
           "title": {
             "maxLength": 200,

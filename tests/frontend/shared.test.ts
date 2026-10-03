@@ -3,8 +3,20 @@ import type { Card,Snapshot } from '../../src/web/api';
 import { SharedBoard,type Subscription } from '../../src/web/state/shared';
 import { draftFrom,reconcileDraft,payloadFrom } from '../../src/web/state/drafts';
 const card:Card={id:'card',title:'共享标题',notes:'原笔记',version:1,columnId:'column',position:0,jiraLinks:[],unassignedMattermostLinks:[]};
-const snapshot=(revision:number):Snapshot=>({revision,archiveCount:0,columns:[{id:'column',name:'待处理',position:0,isDone:false}],cards:[card]});
+const snapshot=(revision:number):Snapshot=>({revision,archiveCount:0,archiveRevision:0,columns:[{id:'column',name:'待处理',position:0,isDone:false}],cards:[card]});
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
+it('manual refresh replaces a hung read and ignores its late response',async()=>{
+ let listener:Subscription|undefined;let resolveFirst:(value:Snapshot)=>void=()=>{};
+ const signals:AbortSignal[]=[];
+ const fetcher=vi.fn().mockImplementationOnce((signal:AbortSignal)=>{signals.push(signal);return new Promise<Snapshot>(resolve=>{resolveFirst=resolve;});}).mockResolvedValueOnce(snapshot(2));
+ const seen:number[]=[];const statuses:string[]=[];
+ const board=new SharedBoard(value=>{listener=value;return()=>{};},fetcher,value=>seen.push(value.revision),value=>statuses.push(value));
+ board.start();listener!.open();listener!.revision(1);
+ board.reload();await tick();
+ expect(signals[0]?.aborted).toBe(true);expect(seen).toEqual([2]);
+ resolveFirst(snapshot(100));await tick();
+ expect(seen).toEqual([2]);expect(statuses.at(-1)).toBe('sync.synced');board.close();
+});
 it('subscribes before snapshot and refetches when an event arrives during the first fetch',async()=>{
  let listener:Subscription|undefined;let resolveFirst:(value:Snapshot)=>void=()=>{};
  const fetcher=vi.fn().mockImplementationOnce(()=>new Promise<Snapshot>(resolve=>{resolveFirst=resolve;})).mockResolvedValueOnce(snapshot(2));

@@ -290,6 +290,11 @@ export interface components {
              * @default 0
              */
             archiveCount: number;
+            /**
+             * Archiverevision
+             * @default 0
+             */
+            archiveRevision: number;
             /** Cards */
             cards: components["schemas"]["Card"][];
             /** Columns */
@@ -366,6 +371,8 @@ export interface components {
              * @default
              */
             notes: string;
+            /** Requestid */
+            requestId?: string | null;
             /** Title */
             title: string;
         };

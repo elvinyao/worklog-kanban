@@ -8,12 +8,14 @@ export type ArchiveSummary=components['schemas']['ArchiveSummary'];
 export type ArchiveList=components['schemas']['ArchiveList'];
 export type ArchiveWrite=components['schemas']['ArchiveWrite'];
 type Models=components['schemas'];
+export const REQUEST_TIMEOUT_MS=15000;
 
 export class ApiError extends Error {
   constructor(public readonly code:string,public readonly status:number,public readonly archiveId?:string){super(code);}
 }
 export const errorText=(error:unknown):MessageKey=>{
   if(error instanceof ApiError){
+    if(error.code==='request_timeout')return 'error.requestTimedOut';
     if(error.code==='archive_links_changed')return 'archive.linksChanged';
     if(error.code==='already_restored')return 'archive.alreadyRestored';
     if(error.status===409)return 'error.sharedConflict';
@@ -26,16 +28,35 @@ export const errorText=(error:unknown):MessageKey=>{
 const record=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==='object';
 const snapshot=(value:unknown)=>record(value)&&Number.isSafeInteger(value.revision)&&Array.isArray(value.columns)&&Array.isArray(value.cards);
 async function request<T=Snapshot>(path:string,method='GET',body?:unknown,signal?:AbortSignal,kind:'board'|'list'|'archive'|'write'|'location'='board'):Promise<T>{
-  const response=await fetch('/api'+path,{method,cache:'no-store',credentials:'same-origin',
-    ...(signal?{signal}:{}),...(body===undefined?{}:{headers:{'Content-Type':'application/json','X-Worklog-Request':'1'},body:JSON.stringify(body)})});
-  if(!response.ok){
-    const data:unknown=await response.json().catch(()=>null);
-    throw new ApiError(record(data)&&typeof data.code==='string'?data.code:'request_failed',response.status,record(data)&&typeof data.archiveId==='string'?data.archiveId:undefined);
+  signal?.throwIfAborted();
+  const controller=new AbortController();
+  const abort=()=>controller.abort(signal?.reason);
+  signal?.addEventListener('abort',abort,{once:true});
+  const timer=setTimeout(()=>controller.abort(new ApiError('request_timeout',408)),REQUEST_TIMEOUT_MS);
+  let interrupted=()=>{};
+  const cancelled=new Promise<never>((_,reject)=>{
+    interrupted=()=>reject(controller.signal.reason);
+    controller.signal.addEventListener('abort',interrupted,{once:true});
+  });
+  const read=async()=>{
+    const response=await fetch('/api'+path,{method,cache:'no-store',credentials:'same-origin',signal:controller.signal,
+      ...(body===undefined?{}:{headers:{'Content-Type':'application/json','X-Worklog-Request':'1'},body:JSON.stringify(body)})});
+    if(!response.ok){
+      const data:unknown=await response.json().catch(()=>null);
+      throw new ApiError(record(data)&&typeof data.code==='string'?data.code:'request_failed',response.status,record(data)&&typeof data.archiveId==='string'?data.archiveId:undefined);
+    }
+    const data:unknown=await response.json();
+    const valid=record(data)&&(kind==='board'?snapshot(data):kind==='list'?Array.isArray(data.items)&&Number.isSafeInteger(data.total):kind==='archive'?typeof data.id==='string'&&snapshot(data.snapshot)&&record(data.restoredCards):kind==='write'?typeof data.archiveId==='string'&&snapshot(data.board)&&record(data.restoredCards):typeof data.archiveId==='string');
+    if(!valid)throw new ApiError('protocol',502);
+    return data as T;
+  };
+  // Bound the response body too, even when a transport fails to settle on abort.
+  try{return await Promise.race([read(),cancelled]);}
+  finally{
+    clearTimeout(timer);
+    signal?.removeEventListener('abort',abort);
+    controller.signal.removeEventListener('abort',interrupted);
   }
-  const data:unknown=await response.json();
-  const valid=record(data)&&(kind==='board'?snapshot(data):kind==='list'?Array.isArray(data.items)&&Number.isSafeInteger(data.total):kind==='archive'?typeof data.id==='string'&&snapshot(data.snapshot)&&record(data.restoredCards):kind==='write'?typeof data.archiveId==='string'&&snapshot(data.board)&&record(data.restoredCards):typeof data.archiveId==='string');
-  if(!valid)throw new ApiError('protocol',502);
-  return data as T;
 }
 export const api={
   board:(signal:AbortSignal)=>request('/board','GET',undefined,signal),

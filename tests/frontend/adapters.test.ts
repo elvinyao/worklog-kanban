@@ -9,7 +9,12 @@ const signal = () => new AbortController().signal;
 const response=(body:unknown,status=200,headers:Record<string,string>={})=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json',...headers}});
 const issue={key:'DEMO-1',fields:{summary:'合成摘要',assignee:null,status:{name:'Open'}}};
 const comment=(id:string,created:string,updated:string)=>({id,body:'comment-'+id,created,updated,author:{displayName:'模拟作者'}});
-afterEach(()=>vi.unstubAllGlobals());
+afterEach(()=>{vi.unstubAllGlobals();vi.useRealTimers();});
+const waitForAbort=(options:RequestInit)=>new Promise<Response>((_resolve,reject)=>{
+ const signal=options.signal!;
+ if(signal.aborted)reject(signal.reason);
+ else signal.addEventListener('abort',()=>reject(signal.reason),{once:true});
+});
 it('reads all visible pages using actual count and chooses created, not updated',async()=>{
  const fetcher=vi.fn()
  .mockResolvedValueOnce(response(issue))
@@ -81,4 +86,67 @@ it('honors HTTP-date Retry-After and uses a conservative fallback',()=>{
  const now=Date.parse('2026-09-19T00:00:00Z');
  expect(retryAfter('Sat, 19 Sep 2026 00:00:05 GMT',now)).toBe(5000);
  expect(retryAfter('invalid',now)).toBe(60000);
+});
+
+it('bounds Jira pagination without claiming a partial scan found the newest comment',async()=>{
+ const fetcher=vi.fn(async(url:string)=>{
+  if(!url.includes('/comment?'))return response(issue);
+  const offset=Number(new URL(url).searchParams.get('startAt'));
+  return response({startAt:offset,maxResults:1,total:11,comments:[comment(String(offset),'2026-09-18T00:00:00Z','2026-09-18T00:00:00Z')]});
+ });
+ vi.stubGlobal('fetch',fetcher);
+ expect(await jiraPreview('DEMO-1',config,signal())).toMatchObject({summary:issue.fields.summary,comment:null,commentUnavailable:true});
+ expect(fetcher).toHaveBeenCalledTimes(11);
+});
+
+it('returns the Jira summary when the shared comment deadline expires and cancels remaining work',async()=>{
+ vi.useFakeTimers();let pendingSignal:AbortSignal|undefined;
+ const fetcher=vi.fn().mockResolvedValueOnce(response(issue)).mockImplementation((_url:string,options:RequestInit)=>{pendingSignal=options.signal!;return waitForAbort(options);});
+ vi.stubGlobal('fetch',fetcher);
+ const result=jiraPreview('DEMO-1',config,signal());
+ await vi.advanceTimersByTimeAsync(5000);
+ expect(await result).toMatchObject({summary:issue.fields.summary,comment:null,commentUnavailable:true});
+ expect(pendingSignal?.aborted).toBe(true);expect(fetcher).toHaveBeenCalledTimes(2);expect(vi.getTimerCount()).toBe(0);
+});
+
+it('returns a message and completed metadata within one shared enrichment budget',async()=>{
+ vi.useFakeTimers();const id='a'.repeat(26),user='u'.repeat(26),channel='c'.repeat(26);const pendingSignals:AbortSignal[]=[];
+ const fetcher=vi.fn((url:string,options:RequestInit)=>{
+  if(url.endsWith('/posts/'+id))return Promise.resolve(response({id,user_id:user,channel_id:channel,create_at:1,message:'available body'}));
+  if(url.endsWith('/users/'+user))return Promise.resolve(response({id:user,username:'available author'}));
+  pendingSignals.push(options.signal!);return waitForAbort(options);
+ });
+ vi.stubGlobal('fetch',fetcher);
+ const result=mattermostPreview(id,'demo',config,signal());
+ await vi.advanceTimersByTimeAsync(0);expect(fetcher).toHaveBeenCalledTimes(4);
+ await vi.advanceTimersByTimeAsync(3000);
+ expect(await result).toMatchObject({text:'available body',author:'available author',channel:null});
+ expect(await result).not.toHaveProperty('avatar');expect(pendingSignals.every(value=>value.aborted)).toBe(true);expect(vi.getTimerCount()).toBe(0);
+});
+
+it('never turns cancellation into a partial Jira or Mattermost success',async()=>{
+ vi.useFakeTimers();
+ for(const kind of ['jira','mattermost'] as const){
+  const controller=new AbortController(),id='a'.repeat(26);
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValueOnce(response(kind==='jira'?issue:{id,user_id:'u'.repeat(26),create_at:1,message:'private body'})).mockImplementation((_url:string,options:RequestInit)=>waitForAbort(options)));
+  const result=(kind==='jira'?jiraPreview('DEMO-1',config,controller.signal):mattermostPreview(id,'demo',config,controller.signal)).catch(error=>error);
+  await vi.advanceTimersByTimeAsync(0);controller.abort(new Error('caller cancelled'));
+  expect(await result).toMatchObject({message:'caller cancelled'});expect(vi.getTimerCount()).toBe(0);
+ }
+});
+
+it('does not hide login loss, permission denial or rate limits during enrichment',async()=>{
+ const id='a'.repeat(26),user='u'.repeat(26);
+ for(const [status,code] of [[401,'login_required'],[403,'unavailable'],[429,'rate_limited']] as const){
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValueOnce(response(issue)).mockResolvedValue(response({},status)));
+  await expect(jiraPreview('DEMO-1',config,signal())).rejects.toMatchObject({code});
+  const pendingSignals:AbortSignal[]=[];
+  vi.stubGlobal('fetch',vi.fn((url:string,options:RequestInit)=>{
+   if(url.endsWith('/posts/'+id))return Promise.resolve(response({id,user_id:user,create_at:1,message:'private body'}));
+   if(url.endsWith('/users/'+user))return Promise.resolve(response({},status));
+   pendingSignals.push(options.signal!);return waitForAbort(options);
+  }));
+  await expect(mattermostPreview(id,'demo',config,signal())).rejects.toMatchObject({code});
+  expect(pendingSignals).toHaveLength(1);expect(pendingSignals[0]!.aborted).toBe(true);
+ }
 });

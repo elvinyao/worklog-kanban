@@ -1,7 +1,9 @@
 import type { SiteConfig } from '../contracts/config';
 import type { MattermostPreview } from '../contracts/preview-messages';
 import { parseResource, POST_ID } from '../contracts/resource-links';
-import { ReadError, bytes, get, optional, readJSON, string } from './http';
+import { BudgetExceeded, bounded, ReadError, bytes, get, optional, readJSON, string } from './http';
+
+const METADATA_BUDGET_MS=3000;
 
 async function avatar(url:string,signal:AbortSignal):Promise<NonNullable<MattermostPreview['avatar']>> {
   const response=await get(url,signal);
@@ -22,20 +24,32 @@ export async function mattermostPreview(postId:string,team:string,config:SiteCon
   const result:MattermostPreview={kind:'mattermost',postId:resource.id,url:resource.url,author:'',channel:null,createdAt:new Date(post.create_at).toISOString(),text:string(post.message)};
   const userId=typeof post.user_id==='string' && POST_ID.test(post.user_id) ? post.user_id : null;
   const channelId=typeof post.channel_id==='string' && POST_ID.test(post.channel_id) ? post.channel_id : null;
-  if(userId){
-    const user=await optional(()=>readJSON(base+'/users/'+userId,signal,config),signal);
-    if(user?.id===userId) {
-      const name=typeof user.nickname==='string'&&user.nickname ? user.nickname : user.username;
-      if(typeof name==='string') result.author=name.slice(0,500);
-    }
-  }
-  if(channelId){
-    const channel=await optional(()=>readJSON(base+'/channels/'+channelId,signal,config),signal);
-    if(channel?.id===channelId && typeof channel.display_name==='string')result.channel=channel.display_name.slice(0,500);
-  }
-  if(userId){
-    const image=await optional(()=>avatar(base+'/users/'+userId+'/image',signal),signal);
-    if(image)result.avatar=image;
+  try {
+    await bounded(signal,METADATA_BUDGET_MS,async metadataSignal=>{
+      await Promise.all([
+        (async()=>{
+          if(!userId)return;
+          const user=await optional(()=>readJSON(base+'/users/'+userId,metadataSignal,config),metadataSignal);
+          if(user?.id===userId) {
+            const name=typeof user.nickname==='string'&&user.nickname ? user.nickname : user.username;
+            if(typeof name==='string')result.author=name.slice(0,500);
+          }
+        })(),
+        (async()=>{
+          if(!channelId)return;
+          const channel=await optional(()=>readJSON(base+'/channels/'+channelId,metadataSignal,config),metadataSignal);
+          if(channel?.id===channelId && typeof channel.display_name==='string')result.channel=channel.display_name.slice(0,500);
+        })(),
+        (async()=>{
+          if(!userId)return;
+          const image=await optional(()=>avatar(base+'/users/'+userId+'/image',metadataSignal),metadataSignal);
+          if(image)result.avatar=image;
+        })(),
+      ]);
+    });
+  } catch(error) {
+    signal.throwIfAborted();
+    if(!(error instanceof BudgetExceeded))throw error;
   }
   return result;
 }

@@ -4,19 +4,22 @@ import {browserLanguages,detectLocale,localeTags,messages,translate,type Message
 
 const form=document.querySelector<HTMLFormElement>('form')!;
 const buttons=[...document.querySelectorAll<HTMLButtonElement>('button')];
+const retry=document.querySelector<HTMLButtonElement>('#retry-load')!;
 const output=document.querySelector<HTMLElement>('#result')!;
 let state:ExtensionSettingsState|undefined;
-let result:MessageKey|undefined,error=false,busy=false;
+let result:MessageKey|undefined,error=false,busy=false,loadFailed=false;
 const fields=['boardOrigin','jiraBaseUrl','mattermostBaseUrl'] as const;
 const input=(name:typeof fields[number])=>document.getElementById(name) as HTMLInputElement;
 function render(){
  const locale=detectLocale(browserLanguages()),t=(key:MessageKey)=>translate(locale,key);
  document.documentElement.lang=localeTags[locale];document.title=t('extension.title')+' · Worklog';
  for(const element of document.querySelectorAll<HTMLElement>('[data-i18n]')){const key=element.dataset.i18n!;if(Object.hasOwn(messages,key))element.textContent=t(key as MessageKey);}
- document.querySelector('#source')!.textContent=t(state?.custom?'extension.custom':'extension.defaults');
- document.querySelector('#access')!.textContent=t(state?.permitted?'extension.ready':'extension.permissionNeeded');
+ document.querySelector('#source')!.textContent=state?t(state.custom?'extension.custom':'extension.defaults'):'';
+ document.querySelector('#access')!.textContent=state?t(state.permitted?'extension.ready':'extension.permissionNeeded'):'';
  output.textContent=result?t(result):'';output.dataset.error=String(error);
- for(const button of buttons)button.disabled=busy||!state;
+ for(const button of buttons)button.disabled=busy||(button!==retry&&!state);
+ retry.hidden=!loadFailed;
+ for(const field of fields)input(field).disabled=busy||!state;
  if(state)(document.querySelector('#open-board') as HTMLAnchorElement).href=state.config.boardOrigin;
 }
 function accept(value:ExtensionSettingsState){
@@ -24,6 +27,18 @@ function accept(value:ExtensionSettingsState){
  for(const field of fields)input(field).value=state.config[field];
 }
 function show(key:MessageKey,failed=false){result=key;error=failed;render();}
+async function load(){
+ if(busy)return;
+ busy=true;loadFailed=false;result=undefined;render();
+ try{
+  const reply=await chrome.runtime.sendMessage({op:'settings.get'});
+  if(!reply?.ok)throw new Error('Unavailable');
+  accept(reply.state);
+  if(state?.failed)show('extension.loadFailed',true);
+ }catch{
+  state=undefined;loadFailed=true;show('extension.readFailed',true);
+ }finally{busy=false;render();}
+}
 async function save(reset:boolean){
  if(busy||!state)return;
  let sites:SiteAddresses;
@@ -42,8 +57,6 @@ async function save(reset:boolean){
 }
 form.addEventListener('submit',event=>{event.preventDefault();void save(false);});
 document.querySelector('#restore')!.addEventListener('click',()=>{void save(true);});
+retry.addEventListener('click',()=>{void load();});
 window.addEventListener('languagechange',render);render();
-void chrome.runtime.sendMessage({op:'settings.get'}).then(reply=>{
- if(!reply?.ok)throw new Error('Unavailable');accept(reply.state);
- if(state?.failed)show('extension.loadFailed',true);else render();
-}).catch(()=>show('extension.loadFailed',true));
+void load();

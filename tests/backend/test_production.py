@@ -22,12 +22,11 @@ HEADERS={'Host':'board.example.invalid','Origin':ORIGIN,'X-Worklog-Request':'1'}
 
 @pytest.fixture(scope='module')
 def package(tmp_path_factory):
-    missing=subprocess.run(['npm','run','build:production','--','--config','config/missing.local.json'],cwd=ROOT,capture_output=True,text=True)
-    assert missing.returncode!=0 and 'configuration' in missing.stderr.lower()
-    subprocess.run(['npm','run','build:production','--','--config','config/production.example.json'],cwd=ROOT,check=True,capture_output=True)
     directory=tmp_path_factory.mktemp('production-isolated')
     bundle=directory/'release'
-    shutil.copytree(ROOT/'dist/production',bundle)
+    missing=subprocess.run(['npm','run','build:production','--','--config','config/missing.local.json','--output',str(bundle)],cwd=ROOT,capture_output=True,text=True)
+    assert missing.returncode!=0 and 'configuration' in missing.stderr.lower()
+    subprocess.run(['npm','run','build:production','--','--config','config/production.example.json','--output',str(bundle)],cwd=ROOT,check=True,capture_output=True)
     config=directory/'sites.json';shutil.copy2(ROOT/'config/production.example.json',config)
     environment=directory/'runtime';venv.EnvBuilder(with_pip=True).create(environment)
     python=environment/'bin/python'
@@ -144,16 +143,17 @@ def test_all_entry_assets_must_exist(package,tmp_path,suffix):
 
 def test_rebuild_preserves_previous_files_and_uses_one_config_snapshot(package,tmp_path):
     original=json.loads(package[2].read_text());config=tmp_path/'build-sites.json';config.write_text(json.dumps(original))
-    destination=ROOT/'dist/production';(destination/'operator-note.txt').write_text('SYNTHETIC_RELEASE_NOTE')
-    previous=set((ROOT/'dist').glob('production.previous-*'))
-    process=subprocess.Popen(['npm','run','build:production','--','--config',str(config)],cwd=ROOT,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+    destination=tmp_path/'release';shutil.copytree(package[1],destination)
+    (destination/'operator-note.txt').write_text('SYNTHETIC_RELEASE_NOTE')
+    previous=set(tmp_path.glob('release.previous-*'))
+    process=subprocess.Popen(['npm','run','build:production','--','--config',str(config),'--output',str(destination)],cwd=ROOT,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
     changed=False
     for line in process.stdout:
         if not changed and 'vite v' in line:
             config.write_text(json.dumps({**original,'boardOrigin':'https://changed.example.invalid'}));changed=True
     assert process.wait(timeout=10)==0 and changed
     assert json.loads((destination/'site-config.json').read_text())==original
-    retained=set((ROOT/'dist').glob('production.previous-*'))-previous
+    retained=set(tmp_path.glob('release.previous-*'))-previous
     assert len(retained)==1 and (retained.pop()/'operator-note.txt').read_text()=='SYNTHETIC_RELEASE_NOTE'
 
 

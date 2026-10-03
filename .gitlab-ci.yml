@@ -1,8 +1,7 @@
 # Requires a privileged GitLab Docker executor. The registry is GitLab's registry.
-stages: [build]
+stages: [test, build]
 
-build-production:
-  stage: build
+.docker-job:
   image: docker:27.5.1-cli
   services:
     - name: docker:27.5.1-dind
@@ -13,6 +12,22 @@ build-production:
     DOCKER_TLS_VERIFY: "1"
     DOCKER_CERT_PATH: /certs/client
     DOCKER_BUILDKIT: "1"
+
+test:
+  extends: .docker-job
+  stage: test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+  script:
+    - docker build --build-arg "PYTHON_IMAGE=$(sed -n 's/^PYTHON_IMAGE=//p' .agent/images.lock)" --build-arg "NODE_IMAGE=$(sed -n 's/^NODE_IMAGE=//p' .agent/images.lock)" --tag worklog-kanban-ci-runtime .agent
+    - docker build --file .agent/ci.Dockerfile --tag worklog-kanban-ci-test .
+    - docker run --rm --init worklog-kanban-ci-test
+
+build-production:
+  extends: .docker-job
+  stage: build
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - if: '$CI_COMMIT_TAG'
