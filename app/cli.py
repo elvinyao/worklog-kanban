@@ -48,6 +48,10 @@ def production_app(config_file:Path, database:Path, *, bundle:Path|None=None, tr
 
 
 def main():
+    if sys.argv[1:2] == ['maintenance']:
+        from app.maintenance import main as maintenance
+        maintenance(sys.argv[2:])
+        return
     parser=argparse.ArgumentParser(description='Worklog: one Python process for the shared board')
     parser.add_argument('--config',type=Path,required=True)
     parser.add_argument('--database',type=Path,default=Path('data/board.sqlite3'),help='Persistent file outside the release directory')

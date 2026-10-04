@@ -177,3 +177,25 @@ def test_dummy_supervisor_restart_retains_shared_data(tmp_path):
                 process.send_signal(signal.SIGINT)
                 try:process.wait(timeout=10)
                 except subprocess.TimeoutExpired:process.kill();process.wait();raise AssertionError('Dummy children failed to stop')
+
+
+def test_packaged_maintenance_runs_without_source_or_development_dependencies(package,tmp_path):
+    directory,bundle,config,python,env=package
+    database=tmp_path/'original.sqlite3';backup=tmp_path/'backup';restored=tmp_path/'restored.sqlite3'
+    command=[str(python),'-I',str(bundle/'run.py'),'maintenance']
+    def run(operation,*arguments):
+        return subprocess.run([*command,operation,'--config',str(config),*arguments],cwd=directory,env=env,capture_output=True,text=True)
+    with server(package,database) as (client,_):
+        column=client.get('/api/board').json()['columns'][0]['id']
+        assert client.post('/api/cards',json={'title':'backup round trip','columnId':column}).status_code==200
+        assert run('backup','--database',str(database),'--output',str(backup)).returncode==2
+    for operation,arguments in [
+        ('backup',['--database',str(database),'--output',str(backup)]),
+        ('check',['--backup',str(backup)]),
+        ('restore',['--backup',str(backup),'--database',str(restored)]),
+    ]:
+        result=run(operation,*arguments)
+        assert result.returncode==0,result.stderr
+        assert json.loads(result.stdout)['cards']==1
+    with server(package,restored) as (client,_):
+        assert client.get('/api/board').json()['cards'][0]['title']=='backup round trip'

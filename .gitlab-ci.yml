@@ -23,7 +23,19 @@ test:
   script:
     - docker build --build-arg "PYTHON_IMAGE=$(sed -n 's/^PYTHON_IMAGE=//p' .agent/images.lock)" --build-arg "NODE_IMAGE=$(sed -n 's/^NODE_IMAGE=//p' .agent/images.lock)" --tag worklog-kanban-ci-runtime .agent
     - docker build --file .agent/ci.Dockerfile --tag worklog-kanban-ci-test .
-    - docker run --rm --init worklog-kanban-ci-test
+    - docker create --init --name "worklog-tests-$CI_JOB_ID" worklog-kanban-ci-test
+    - docker start --attach "worklog-tests-$CI_JOB_ID"
+    - test "$(docker inspect --format '{{.State.ExitCode}}' "worklog-tests-$CI_JOB_ID")" = 0
+  after_script:
+    - mkdir -p .tmp/ci-results
+    - docker cp "worklog-tests-$CI_JOB_ID:/workspace/.tmp/ci-results/." .tmp/ci-results/ || true
+    - docker rm -f "worklog-tests-$CI_JOB_ID" || true
+  artifacts:
+    when: always
+    paths: [.tmp/ci-results/]
+    reports:
+      junit: [.tmp/ci-results/unit.xml, .tmp/ci-results/backend.xml, .tmp/ci-results/e2e.xml]
+    expire_in: 7 days
 
 build-production:
   extends: .docker-job

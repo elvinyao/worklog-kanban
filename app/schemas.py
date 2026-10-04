@@ -61,6 +61,7 @@ class MoveCard(SharedModel):
 
 
 class ChangeColumn(SharedModel):
+    requestId: Identifier | None = None
     name: Name
     expectedBoardRevision: Revision
 

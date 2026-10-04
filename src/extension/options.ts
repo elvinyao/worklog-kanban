@@ -27,11 +27,20 @@ function accept(value:ExtensionSettingsState){
  for(const field of fields)input(field).value=state.config[field];
 }
 function show(key:MessageKey,failed=false){result=key;error=failed;render();}
+class SettingsTimeout extends Error {}
+async function message(value:unknown){
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ try{return await Promise.race([chrome.runtime.sendMessage(value),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new SettingsTimeout()),15000);})]);}
+ finally{clearTimeout(timer);}
+}
+window.addEventListener('beforeunload',event=>{
+ if(busy||(state&&fields.some(field=>input(field).value!==state!.config[field])))event.preventDefault();
+});
 async function load(){
  if(busy)return;
  busy=true;loadFailed=false;result=undefined;render();
  try{
-  const reply=await chrome.runtime.sendMessage({op:'settings.get'});
+  const reply=await message({op:'settings.get'});
   if(!reply?.ok)throw new Error('Unavailable');
   accept(reply.state);
   if(state?.failed)show('extension.loadFailed',true);
@@ -49,10 +58,10 @@ async function save(reset:boolean){
   // Must be invoked directly from the click/submit gesture, before any asynchronous work.
   const permitted=await chrome.permissions.request({origins:sitePermissions(sites)});
   if(!permitted){show('extension.denied',true);return;}
-  const reply=await chrome.runtime.sendMessage({op:'settings.save',sites:reset?null:sites});
+  const reply=await message({op:'settings.save',sites:reset?null:sites});
   if(!reply?.ok){show(reply?.error==='permission'?'extension.denied':reply?.error==='invalid'?'extension.invalid':'extension.failed',true);return;}
   accept(reply.state);show(reset?'extension.restored':'extension.saved');
- }catch{show('extension.failed',true);}
+ }catch(reason){show(reason instanceof SettingsTimeout?'extension.saveTimeout':'extension.failed',true);}
  finally{busy=false;render();}
 }
 form.addEventListener('submit',event=>{event.preventDefault();void save(false);});

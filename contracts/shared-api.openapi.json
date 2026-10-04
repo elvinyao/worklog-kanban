@@ -332,6 +332,20 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "requestId": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestid"
           }
         },
         "required": [

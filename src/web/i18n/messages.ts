@@ -1,6 +1,19 @@
 // Stable English keys; each value is [Simplified Chinese, English, Japanese].
 // UI text only. Shared card data and external content are never translation keys.
 export const messages = {
+  "draft.all": ["本机草稿", "Local drafts", "ローカル下書き"],
+  "draft.copyHint": ["打开对应的编辑窗口可恢复草稿。若原任务已归档或删除，可在此选择并复制输入；删除不会改变共享内容。", "Restore drafts in their editors. If the original task was archived or deleted, select and copy its input here. Deleting a draft does not change shared content.", "対応する編集画面で復元できます。元のタスクが削除・アーカイブされた場合はここで入力をコピーできます。下書きの削除は共有内容に影響しません。"],
+  "draft.empty": ["没有可用的本机草稿。", "No saved local drafts.", "保存された下書きはありません。"],
+  "draft.localOptIn": ["在此浏览器保留输入草稿（7天，不含个人预览）", "Keep input drafts in this browser for 7 days (no personal previews)", "このブラウザーに入力の下書きを7日間保存（個人プレビューは除外）"],
+  "draft.failed": ["本地草稿无法保存或恢复，请复制重要输入。", "Could not save or restore the local draft. Copy important input.", "下書きを保存または復元できません。重要な入力をコピーしてください。"],
+  "draft.available": ["发现本机草稿。恢复将替换当前输入，请先保留需要的内容。", "Saved drafts found. Restoring replaces current input; keep any text you need first.", "保存された下書きがあります。復元すると現在の入力を置き換えます。必要な内容を先に保存してください。"],
+  "draft.restore": ["恢复草稿：{date}", "Restore draft: {date}", "下書きを復元：{date}"],
+  "draft.discardSaved": ["删除这些本机草稿", "Delete these saved drafts", "保存された下書きを削除"],
+  "extension.saveTimeout": ["保存结果尚未确认，输入已保留。请重新打开设置核对实际地址。", "Saving timed out; your input is preserved. Reopen settings to check the saved addresses.", "保存結果を確認できません。入力は保持されています。設定を開き直して保存されたアドレスを確認してください。"],
+  "columns.conflict": ["列名已被修改。原名称：{original}；远端名称：{remote}；本地名称：{local}。", "The column was renamed. Original: {original}; remote: {remote}; your draft: {local}.", "列名が変更されました。元の名前：{original}、現在：{remote}、下書き：{local}。"],
+  "columns.saveCompared": ["核对后保存本地列名", "Save compared name", "確認した名前を保存"],
+  "columns.uncertain": ["列可能已创建。请重试确认同一次操作，避免重复创建。", "The column may already exist. Retry to confirm the same operation without duplicates.", "列が作成済みの可能性があります。同じ操作を再試行して結果を確認してください。"],
+  "columns.retryCreate": ["重试并确认创建列", "Retry and confirm column", "列の作成結果を再確認"],
   "columns.deletedDraft": ["列“{column}”已删除，未保存的列名仍保留。可复制后丢弃此草稿。", "Column “{column}” was deleted. Your unsaved name is preserved below; copy it before discarding the draft.", "列「{column}」は削除されました。未保存の列名は保持されています。必要に応じてコピーしてから破棄してください。"],
   "columns.deletedDraftLabel": ["已删除列的名称草稿：{column}", "Name draft for deleted column: {column}", "削除された列の名前の下書き：{column}"],
   "columns.discardDraft": ["丢弃此草稿", "Discard this draft", "この下書きを破棄"],

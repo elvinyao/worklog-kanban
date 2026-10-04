@@ -117,7 +117,8 @@ test('column drafts survive remote changes and each successful save clears only 
  await sharedWrite(context,'/columns/'+column.id,{name:'远端列名',expectedBoardRevision:current.revision},'PATCH');
  await expect(page.getByRole('checkbox',{name:'将远端列名设为完成列',exact:true})).toBeVisible();
  await expect(input).toHaveValue('本地列名');
- await page.getByRole('button',{name:'保存列名 '+index,exact:true}).click();
+ await expect(page.getByRole('button',{name:'保存列名 '+index,exact:true})).toBeDisabled();
+ await page.getByRole('button',{name:'核对后保存本地列名',exact:true}).click();
  await expect(page.getByRole('checkbox',{name:'将本地列名设为完成列',exact:true})).toBeVisible();
  expect(await unloadProtected(page)).toBe(true);
  await discardPrompt(page,()=>page.getByRole('button',{name:'关闭列管理',exact:true}).click());

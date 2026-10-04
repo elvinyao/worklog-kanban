@@ -7,6 +7,8 @@ import { Modal } from './Modal';
 import { JiraLinksEditor } from './JiraLinksEditor';
 import { CardLinks } from './CardLinks';
 import {PreviewToolbar} from './PreviewProvider';
+import {LocalDraft,useLocalDraft} from './LocalDraft';
+import {cardDraft,object,text} from '../state/recover-input';
 
 export function CardDialog({card,columnId,snapshot,accept,reload,close,missing=false,onDirtyChange}:{card:Card|undefined;columnId:string;snapshot:Snapshot;accept:(value:Snapshot)=>void;reload:()=>void;close:()=>void;missing?:boolean;onDirtyChange?:(dirty:boolean)=>void}){
  const {t,column:columnLabel}=useLanguage();
@@ -17,22 +19,29 @@ export function CardDialog({card,columnId,snapshot,accept,reload,close,missing=f
  const [uncertain,setUncertain]=useState(false);
  const [archiveId,setArchiveId]=useState<string>();const [lookup,setLookup]=useState(0);const [copyVisible,setCopyVisible]=useState(false);const gone=missing||!!archiveId;
  const dirty=isDirty(draft)||(!card&&target!==columnId)||uncertain;
+ const local=useLocalDraft('card:'+(card?.id??'new'),{draft,target,pending:pendingCreate.current},value=>{
+  const data=object(value),restored=cardDraft(data.draft),destination=text(data.target,100);
+  let pending:Parameters<typeof api.createCard>[0]|null=null;
+  if(!card&&data.pending!==null){const raw=object(data.pending),fields=payloadFrom(restored);pending={requestId:text(raw.requestId,100),columnId:text(raw.columnId,100),title:fields.title,notes:fields.notes,jiraLinks:fields.jiraLinks};if(pending.columnId!==destination)throw new Error('Invalid target');}
+  setDraft(restored);setTarget(destination);pendingCreate.current=pending;setUncertain(!!pending);
+ });
  useEffect(()=>{onDirtyChange?.(dirty);return()=>onDirtyChange?.(false);},[dirty,onDirtyChange]);
  useEffect(()=>{if(!dirty)return;const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[dirty]);
  useEffect(()=>{if(!missing||!card)return;const abort=new AbortController();void api.archiveLocation(card.id,abort.signal).then(value=>setArchiveId(value.archiveId)).catch(reason=>{if(!abort.signal.aborted)setError(errorText(reason));});return()=>abort.abort();},[missing,card?.id,lookup]);
  const targetExists=snapshot.columns.some(column=>column.id===target);
  useEffect(()=>{if(card)setDraft(value=>reconcileDraft(value,card));},[card]);
  const field=<K extends keyof Fields>(key:K,value:Fields[K])=>setDraft(previous=>({...previous,fields:{...previous.fields,[key]:value}}));
- const requestClose=()=>{if(saving)return;if(dirty)setClosing(true);else close();};
- const requestCloseDiscard=()=>{if(!saving)close();};
+ const requestClose=()=>{if(saving)return;if(dirty)setClosing(true);else{local.clear();close();}};
+ const requestCloseDiscard=()=>{if(!saving){local.clear();close();}};
  async function save(compare=false){
   if(gone||inFlight.current||(!card&&!targetExists&&!pendingCreate.current))return;
   inFlight.current=true;setSaving(true);setError('');
   try{
    const fields=payloadFrom(draft);
    if(!card)pendingCreate.current??={requestId:crypto.randomUUID(),title:fields.title,notes:fields.notes,jiraLinks:fields.jiraLinks,columnId:target};
+   local.persist({draft,target,pending:pendingCreate.current});
    const result=card?await api.editCard(card.id,{...fields,expectedVersion:compare?card.version:draft.baseVersion}):await api.createCard(pendingCreate.current!);
-   accept(result);close();
+   accept(result);local.clear();close();
   }catch(reason){
    setError(errorText(reason));
    if(!card){
@@ -52,6 +61,7 @@ export function CardDialog({card,columnId,snapshot,accept,reload,close,missing=f
   <div className="dialog-head"><div><span className="eyebrow">{t('card.eyebrow')}</span><h2>{t(card?'card.details':'card.new')}</h2></div><button className="icon" aria-label={t("card.close")} onClick={requestClose} disabled={saving}>×</button></div>
   <form onSubmit={event=>{event.preventDefault();void save();}}>
    <div className="dialog-content">
+    <LocalDraft draft={local} busy={saving}/>
     <PreviewToolbar/>
     {gone&&<div className="notice"><strong>{t('archive.archivedDraft')}</strong><div className="row-actions">{archiveId?<a href={'#/archives/'+archiveId}>{t('archive.view')}</a>:<button type="button" onClick={()=>setLookup(value=>value+1)}>{t('sync.refresh')}</button>}<button type="button" onClick={()=>{setCopyVisible(true);void navigator.clipboard?.writeText(JSON.stringify(payloadFrom(draft),null,2)).catch(()=>{});}}>{t('archive.copyDraft')}</button></div>{copyVisible&&<label>{t('archive.draftCopy')}<textarea readOnly rows={6} value={JSON.stringify(payloadFrom(draft),null,2)} onFocus={event=>event.target.select()}/></label>}</div>}
     <p className="hint">{t("card.sharedFieldsHint")}</p>

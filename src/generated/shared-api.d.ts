@@ -327,6 +327,8 @@ export interface components {
             expectedBoardRevision: number;
             /** Name */
             name: string;
+            /** Requestid */
+            requestId?: string | null;
         };
         /** Column */
         Column: {

@@ -43,6 +43,8 @@ def create_app(config:SiteConfig|None=None, database:Path|None=None, trusted_pro
             lock = database.with_suffix(database.suffix+'.lock').open('a')
             try:
                 fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+                if database.with_suffix(database.suffix+'.maintenance').exists():
+                    raise RuntimeError('Incomplete database restore; run maintenance restore before starting')
                 store.initialize()
                 return lock,store.snapshot().revision
             except BaseException:

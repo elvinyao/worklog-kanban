@@ -99,12 +99,13 @@ class Store:
         return revision
 
     def _write(self, action, resource_id, source_ip, operation, *, create_request=None):
+        request_table, resource_field = ('create_column_requests', 'column_id') if action == 'column.create' else ('create_card_requests', 'card_id')
         try:
             with self.connection() as connection:
                 connection.execute('BEGIN IMMEDIATE')
                 if create_request is not None:
                     request_id, fingerprint = create_request
-                    previous = connection.execute('SELECT fingerprint FROM create_card_requests WHERE request_id=?', (request_id,)).fetchone()
+                    previous = connection.execute(f'SELECT fingerprint FROM {request_table} WHERE request_id=?', (request_id,)).fetchone()
                     if previous is not None:
                         if previous['fingerprint'] != fingerprint:
                             raise StoreError('request_conflict')
@@ -113,7 +114,7 @@ class Store:
                 operation(connection)
                 self._record(connection,action,resource_id,source_ip)
                 if create_request is not None:
-                    connection.execute('INSERT INTO create_card_requests (request_id,fingerprint,card_id) VALUES (?,?,?)', (request_id,fingerprint,resource_id))
+                    connection.execute(f'INSERT INTO {request_table} (request_id,fingerprint,{resource_field}) VALUES (?,?,?)', (request_id,fingerprint,resource_id))
                 result = self._snapshot(connection)
                 connection.commit()
                 return WriteResult(result, result.revision, True) if create_request is not None else result
@@ -214,13 +215,17 @@ class Store:
 
     def create_column(self, data: ChangeColumn, source_ip: str):
         column_id = uuid.uuid4().hex
+        create_request = None
+        if data.requestId is not None:
+            payload = json.dumps(data.model_dump(exclude={'requestId'}), sort_keys=True, ensure_ascii=False)
+            create_request = (data.requestId, hashlib.sha256(payload.encode()).hexdigest())
         def operation(connection):
             self._revision(connection,data.expectedBoardRevision)
             position = connection.execute('SELECT COUNT(*) FROM columns').fetchone()[0]
             if position >= 100:
                 raise StoreError('column_limit')
             connection.execute('INSERT INTO columns (id,name,position) VALUES (?,?,?)', (column_id,data.name,position))
-        return self._write('column.create',column_id,source_ip,operation)
+        return self._write('column.create',column_id,source_ip,operation,create_request=create_request)
 
     def rename_column(self, column_id: str, data: ChangeColumn, source_ip: str):
         def operation(connection):

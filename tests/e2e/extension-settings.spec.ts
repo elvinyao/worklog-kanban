@@ -11,6 +11,37 @@ async function openSettings(context:BrowserContext){
 }
 async function save(page:Page){await page.getByRole('button',{name:'保存设置',exact:true}).click();await expect(page.getByRole('status')).toHaveText('已保存。请刷新看板以应用新地址。');}
 
+test('settings reads time out and ignore late responses after a successful retry',async({alice})=>{
+ const worker=alice.serviceWorkers()[0]??await alice.waitForEvent('serviceworker');const page=await alice.newPage();await page.clock.install();
+ await page.addInitScript(()=>{
+  const send=chrome.runtime.sendMessage.bind(chrome.runtime);let first=true;
+  Object.defineProperty(chrome.runtime,'sendMessage',{value:(message:{op:string})=>{
+   if(message.op==='settings.get'&&first){first=false;return new Promise(resolve=>{(window as unknown as {release:()=>void}).release=()=>resolve({ok:false});});}
+   return send(message);
+  }});
+ });
+ await page.goto(new URL('options.html',worker.url()).href);await page.clock.fastForward(16000);
+ await expect(page.getByRole('button',{name:'重试加载',exact:true})).toBeVisible();await page.getByRole('button',{name:'重试加载',exact:true}).click();
+ await expect(page.getByRole('button',{name:'保存设置',exact:true})).toBeEnabled();await page.getByLabel('Jira 地址',{exact:true}).fill(jira+'/local');
+ await page.evaluate(()=>(window as unknown as {release:()=>void}).release());await expect(page.getByLabel('Jira 地址',{exact:true})).toHaveValue(jira+'/local');
+ await expect(page.getByRole('button',{name:'重试加载',exact:true})).toBeHidden();
+});
+
+test('settings save timeout preserves input and dirty guard until a confirmed save',async({alice})=>{
+ const {page}=await openSettings(alice);await page.clock.install();
+ const protectedInput=()=>page.evaluate(()=>!dispatchEvent(new Event('beforeunload',{cancelable:true})));
+ expect(await protectedInput()).toBe(false);await page.getByLabel('Jira 地址',{exact:true}).fill(jira+'/local');expect(await protectedInput()).toBe(true);
+ await page.getByLabel('Jira 地址',{exact:true}).fill(jira);expect(await protectedInput()).toBe(false);
+ await page.getByLabel('Jira 地址',{exact:true}).fill(jira+'/local');
+ await page.evaluate(()=>{
+  const send=chrome.runtime.sendMessage.bind(chrome.runtime);let first=true;chrome.permissions.request=async()=>true;
+  Object.defineProperty(chrome.runtime,'sendMessage',{value:(message:{op:string})=>{if(message.op==='settings.save'&&first){first=false;return new Promise(()=>{});}return send(message);}});
+ });
+ await page.getByRole('button',{name:'保存设置',exact:true}).click();await page.clock.fastForward(16000);
+ await expect(page.getByRole('status')).toContainText('保存结果尚未确认');await expect(page.getByLabel('Jira 地址',{exact:true})).toHaveValue(jira+'/local');expect(await protectedInput()).toBe(true);
+ await save(page);expect(await protectedInput()).toBe(false);
+});
+
 test('a failed initial settings read can be retried without reloading the extension',async({alice})=>{
  const worker=alice.serviceWorkers()[0]??await alice.waitForEvent('serviceworker');
  const page=await alice.newPage();
