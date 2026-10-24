@@ -3,9 +3,7 @@ import { api,ApiError,errorText,type Column,type Snapshot } from '../api';
 import {useLanguage} from '../i18n';
 import type {MessageKey} from '../i18n/core';
 import { Modal } from './Modal';
-import {useDraftGuard} from '../state/draft-guard';
-import {LocalDraft,useLocalDraft} from './LocalDraft';
-import {object,text,number} from '../state/recover-input';
+import {LocalDraft,number,object,text,useDraftGuard,useLocalDraft} from './LocalDraft';
 interface ColumnDraft {value:string;baseline:string;column:Column}
 function ColumnRow({column,index,snapshot,busy,run,draft,onDraftChange,clearDraft}:{column:Column;index:number;snapshot:Snapshot;busy:boolean;run:(operation:()=>Promise<Snapshot>)=>Promise<void>;draft:ColumnDraft|undefined;onDraftChange:(column:Column,value:string,baseline:string)=>void;clearDraft:(id:string)=>void}){
  const {t,column:columnLabel}=useLanguage();const displayName=columnLabel(column);
@@ -54,7 +52,7 @@ export function ColumnDialog({snapshot,accept,reload,close,onDirtyChange}:{snaps
   });
  }
  async function run(operation:()=>Promise<Snapshot>){if(inFlight.current)return;inFlight.current=true;setBusy(true);setError('');try{accept(await operation());}catch(reason){setError(errorText(reason));reload();}finally{inFlight.current=false;setBusy(false);}}
- return <Modal title={t("columns.manage")} close={requestClose}><div className="dialog-head"><div><span className="eyebrow">{t('columns.eyebrow')}</span><h2>{t("columns.manage")}</h2></div><button className="icon" disabled={busy} aria-label={t("columns.close")} onClick={requestClose}>×</button></div><div className="dialog-content"><p className="hint">{t("columns.description")}</p>
+ return <Modal title={t("columns.manage")} close={requestClose}><div className="dialog-head"><h2>{t("columns.manage")}</h2><button className="icon" disabled={busy} aria-label={t("columns.close")} onClick={requestClose}>×</button></div><div className="dialog-content">
   {error&&<p role="alert" className="error">{t(error)}</p>}
   <LocalDraft draft={local} busy={busy}/>
   {snapshot.columns.map((column,index)=><ColumnRow key={column.id} column={column} index={index} snapshot={snapshot} busy={busy} run={run} draft={drafts.get(column.id)} onDraftChange={onDraftChange} clearDraft={clearDraft}/>)}

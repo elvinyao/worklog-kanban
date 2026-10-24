@@ -1,11 +1,19 @@
 import asyncio
 from collections.abc import Callable
+from dataclasses import dataclass
 import logging
+from typing import Any
 
 from app.schemas import BoardSnapshot
-from app.write_result import WriteResult
 
 logger = logging.getLogger('worklog')
+
+
+@dataclass(frozen=True)
+class WriteResult:
+    value: Any
+    revision: int
+    committed: bool
 
 
 class EventHub:

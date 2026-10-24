@@ -2,7 +2,6 @@
 // UI text only. Shared card data and external content are never translation keys.
 export const messages = {
   "draft.all": ["本机草稿", "Local drafts", "ローカル下書き"],
-  "draft.copyHint": ["打开对应的编辑窗口可恢复草稿。若原任务已归档或删除，可在此选择并复制输入；删除不会改变共享内容。", "Restore drafts in their editors. If the original task was archived or deleted, select and copy its input here. Deleting a draft does not change shared content.", "対応する編集画面で復元できます。元のタスクが削除・アーカイブされた場合はここで入力をコピーできます。下書きの削除は共有内容に影響しません。"],
   "draft.empty": ["没有可用的本机草稿。", "No saved local drafts.", "保存された下書きはありません。"],
   "draft.localOptIn": ["在此浏览器保留输入草稿（7天，不含个人预览）", "Keep input drafts in this browser for 7 days (no personal previews)", "このブラウザーに入力の下書きを7日間保存（個人プレビューは除外）"],
   "draft.failed": ["本地草稿无法保存或恢复，请复制重要输入。", "Could not save or restore the local draft. Copy important input.", "下書きを保存または復元できません。重要な入力をコピーしてください。"],
@@ -31,9 +30,7 @@ export const messages = {
   "archive.name": ["归档名称", "Archive name", "アーカイブ名"],
   "archive.description": ["归档说明（选填）", "Description (optional)", "説明（任意）"],
   "archive.defaultName": ["{date} · 已完成任务", "{date} · Completed tasks", "{date} · 完了したタスク"],
-  "archive.onlyCompleted": ["未完成任务继续留在 Current。取消勾选可保留部分已完成任务。", "Unfinished tasks stay in Current. Uncheck completed tasks you want to keep.", "未完了のタスクは Current に残ります。残したい完了タスクの選択を解除してください。"],
   "archive.selectTask": ["选择任务：{title}", "Select task: {title}", "タスクを選択：{title}"],
-  "archive.summary": ["将归档 {count} 项，Current 保留 {remaining} 项。", "Archive {count} tasks; keep {remaining} in Current.", "{count} 件をアーカイブし、Current に {remaining} 件を残します。"],
   "archive.confirm": ["归档 {count} 项", "Archive {count} tasks", "{count} 件をアーカイブ"],
   "archive.created": ["已归档 {count} 项，未完成任务已保留。", "Archived {count} tasks. Unfinished work remains in Current.", "{count} 件をアーカイブしました。未完了のタスクは Current に残っています。"],
   "archive.view": ["查看归档", "View archive", "アーカイブを見る"],
@@ -49,13 +46,10 @@ export const messages = {
   "archive.renameTitle": ["重命名归档", "Rename archive", "アーカイブ名を変更"],
   "archive.saveName": ["保存归档名称", "Save archive name", "アーカイブ名を保存"],
   "archive.readonly": ["只读归档", "Read-only archive", "読み取り専用アーカイブ"],
-  "archive.live": ["Jira / Mattermost 为源站实时内容，非归档时的历史快照。", "Jira / Mattermost previews show live source content, not content captured at archival time.", "Jira / Mattermost のプレビューは現在の内容です。アーカイブ時点の内容ではありません。"],
   "archive.closeDetail": ["关闭归档详情", "Close archive details", "アーカイブの詳細を閉じる"],
   "archive.restore": ["恢复任务", "Restore tasks", "タスクを復元"],
   "archive.restoreTitle": ["恢复到 Current", "Restore to Current", "Current に復元"],
-  "archive.restoreHint": ["创建新卡片，归档记录保留。", "Create new cards and keep the archive unchanged.", "新しいカードを作成します。アーカイブはそのまま残ります。"],
   "archive.target": ["恢复到列", "Restore to column", "復元先の列"],
-  "archive.restoreSummary": ["将创建 {count} 张新卡片，追加到目标列末尾。", "Create {count} new cards at the end of the target column.", "復元先の列の末尾に {count} 枚の新しいカードを作成します。"],
   "archive.restoreConfirm": ["恢复 {count} 项到 Current", "Restore {count} tasks to Current", "{count} 件を Current に復元"],
   "archive.restored": ["已恢复 {count} 项，归档记录保留。", "Restored {count} tasks. The archive is unchanged.", "{count} 件を復元しました。アーカイブはそのまま残っています。"],
   "archive.alreadyCurrent": ["已在 Current", "Already in Current", "Current に存在します"],
@@ -73,10 +67,7 @@ export const messages = {
   "archive.linksChanged": ["归档链接与当前站点配置不匹配，请检查配置后重试。", "Archived links do not match the current site settings. Check settings and retry.", "アーカイブ内のリンクが現在のサイト設定と一致しません。設定を確認して再試行してください。"],
   "archive.alreadyRestored": ["选中的任务已有 Current 副本，请重新核对。", "Selected tasks already have copies in Current. Review your selection.", "選択したタスクは Current に存在します。選択を再確認してください。"],
   "preview.cardToggle": ["卡片预览", "Card previews", "カードのプレビュー"],
-  "preview.on": ["开", "On", "オン"],
-  "preview.off": ["关", "Off", "オフ"],
   "card.jiraTickets": ["Jira 票据", "Jira tickets", "Jira 課題"],
-  "card.hierarchyHint": ["每张 Jira 票据下可添加多条 Mattermost 消息。移除票据会一起移除它的消息关联。", "Add Mattermost messages under each Jira ticket. Removing a ticket also removes its message links.", "Jira 課題ごとに Mattermost メッセージを追加できます。課題を削除すると、そのメッセージの関連付けも削除されます。"],
   "card.addJira": ["添加 Jira 票据", "Add Jira ticket", "Jira 課題を追加"],
   "card.jiraNumber": ["Jira 票据 {index}", "Jira ticket {index}", "Jira 課題 {index}"],
   "card.moveJiraUp": ["上移 Jira 票据 {index}", "Move Jira ticket {index} up", "Jira 課題 {index} を上へ"],
@@ -86,17 +77,11 @@ export const messages = {
   "card.chooseJira": ["选择 Jira 票据…", "Choose a Jira ticket…", "Jira 課題を選択…"],
   "card.assignMessage": ["归属到 Jira 票据", "Assign to a Jira ticket", "Jira 課題に割り当て"],
   "card.unassignedMessages": ["待归属消息", "Unassigned messages", "未割り当てのメッセージ"],
-  "card.unassignedHint": ["这些历史消息尚未关联 Jira。请添加或选择上方的票据，再将消息归入其中。", "These existing messages have no Jira ticket. Add or choose a ticket above, then assign each message to it.", "これらの既存メッセージには Jira 課題がありません。上で課題を追加または選択し、各メッセージを割り当ててください。"],
   "preview.reconnecting": ["正在恢复个人预览连接…", "Reconnecting personal previews…", "個人プレビューに再接続しています…"],
   "extension.title": ["扩展连接设置", "Extension connection settings", "拡張機能の接続設定"],
-  "extension.eyebrow": ["你的工作空间", "YOUR WORKSPACE", "あなたのワークスペース"],
-  "extension.description": ["连接你的看板、Jira 和 Mattermost。设置仅用于当前浏览器。", "Connect your board, Jira and Mattermost. These settings apply only to this browser.", "ボード、Jira、Mattermost に接続します。この設定は現在のブラウザーにのみ適用されます。"],
   "extension.board": ["看板地址", "Board address", "ボードのアドレス"],
-  "extension.boardHint": ["填写完整站点地址，可包含端口。", "Enter the full site address, including the port if needed.", "必要に応じてポート番号を含む、サイトの完全なアドレスを入力してください。"],
   "extension.jira": ["Jira 地址", "Jira address", "Jira のアドレス"],
-  "extension.jiraHint": ["保留站点使用的路径，例如 /jira。", "Include the site's path, such as /jira.", "/jira など、サイトで使用するパスも含めてください。"],
   "extension.mattermost": ["Mattermost 地址", "Mattermost address", "Mattermost のアドレス"],
-  "extension.mattermostHint": ["填写站点地址，不需要消息或频道链接。", "Enter the site address, rather than a message or channel link.", "メッセージやチャンネルのリンクではなく、サイトのアドレスを入力してください。"],
   "extension.save": ["保存设置", "Save settings", "設定を保存"],
   "extension.reset": ["恢复部署默认", "Restore deployment defaults", "配布時の設定に戻す"],
   "extension.defaults": ["使用部署默认", "Using deployment defaults", "配布時の設定を使用中"],
@@ -109,7 +94,6 @@ export const messages = {
   "extension.denied": ["未获得站点权限，原设置保持不变。", "Site access was not granted. Your previous settings are unchanged.", "サイトへのアクセスが許可されませんでした。以前の設定を保持しています。"],
   "extension.failed": ["无法保存设置。请重试；若仍失败，请重新加载扩展。", "Could not save settings. Try again, or reload the extension if the problem continues.", "設定を保存できませんでした。再試行し、解決しない場合は拡張機能を再読み込みしてください。"],
   "extension.loadFailed": ["无法读取有效设置，预览已暂停。请重新保存地址或恢复部署默认。", "Valid settings could not be loaded, so previews are paused. Save the addresses again or restore deployment defaults.", "有効な設定を読み込めないため、プレビューを停止しています。アドレスを保存し直すか、配布時の設定に戻してください。"],
-  "extension.note": ["地址需与看板的部署配置一致。请在 Jira 和 Mattermost 原站点登录，无需在这里填写密码。", "Use the addresses configured for your board. Sign in on the Jira and Mattermost sites; no passwords are needed here.", "ボードの配布設定と一致するアドレスを使用してください。Jira と Mattermost のサイトでログインします。ここでパスワードを入力する必要はありません。"],
   "extension.openBoard": ["打开看板 ↗", "Open board ↗", "ボードを開く ↗"],
   "connection.configurationMismatch": ["扩展地址与看板不一致，请检查扩展设置", "Extension addresses do not match this board. Check extension settings.", "拡張機能とボードのアドレスが一致しません。拡張機能の設定を確認してください。"],
   "language.auto": ["自动", "Auto", "自動"],
@@ -117,11 +101,6 @@ export const messages = {
     "跟随浏览器",
     "Use browser language",
     "ブラウザーに合わせる"
-  ],
-  "app.tagline": [
-    "让工作进展有迹可循",
-    "Keep your work moving forward",
-    "仕事の進捗を、ひと目で"
   ],
   "environment.demo": [
     "模拟环境",
@@ -153,11 +132,6 @@ export const messages = {
     "Sync again",
     "再同期"
   ],
-  "board.eyebrow": [
-    "团队空间",
-    "TEAM WORKSPACE",
-    "チームワークスペース"
-  ],
   "board.title": [
     "共享工作看板",
     "Shared work board",
@@ -187,16 +161,6 @@ export const messages = {
     "正在读取共享看板…",
     "Loading the shared board…",
     "共有ボードを読み込み中…"
-  ],
-  "app.sharedNotesFooter": [
-    "共享笔记 · 即时同步",
-    "Shared notes · Live updates",
-    "共有メモ · リアルタイム同期"
-  ],
-  "app.sourceContentFooter": [
-    "Jira 与消息原文保留在各自系统",
-    "Jira and message content stay in their source systems",
-    "Jira とメッセージの原文は各システムに保持されます"
   ],
   "board.ariaLabel": [
     "工作看板",
@@ -268,20 +232,10 @@ export const messages = {
     "Card details",
     "カードの詳細"
   ],
-  "card.eyebrow": [
-    "共享工作",
-    "SHARED WORK",
-    "共有作業"
-  ],
   "card.close": [
     "关闭详情",
     "Close details",
     "詳細を閉じる"
-  ],
-  "card.sharedFieldsHint": [
-    "标题、笔记和关联说明对所有看板使用者可见。",
-    "Titles, notes and link descriptions are visible to everyone using this board.",
-    "タイトル、メモ、リンクの説明は、このボードの全利用者に公開されます。"
   ],
   "card.column": [
     "所在列",
@@ -398,11 +352,6 @@ export const messages = {
     "Personal preview",
     "個人プレビュー"
   ],
-  "preview.sessionHint": [
-    "按你的原系统身份读取",
-    "Read using your own source-system session",
-    "元のシステムでのあなたの権限で読み取ります"
-  ],
   "card.draftPreserved": [
     "共享内容已更新，本地草稿已保留。",
     "Shared content changed. Your draft has been kept.",
@@ -503,20 +452,10 @@ export const messages = {
     "Move cards and delete {column}",
     "カードを移動して{column}を削除"
   ],
-  "columns.eyebrow": [
-    "看板设置",
-    "BOARD SETTINGS",
-    "ボード設定"
-  ],
   "columns.close": [
     "关闭列管理",
     "Close column settings",
     "列の設定を閉じる"
-  ],
-  "columns.description": [
-    "调整工作流。删除列时，其卡片会依原顺序移到目标列末尾。",
-    "Customize the workflow. Deleting a column moves its cards to the end of the destination column in their current order.",
-    "作業の流れを調整します。列を削除すると、そのカードは順序を保って移動先の末尾に追加されます。"
   ],
   "columns.newName": [
     "新列名称",
@@ -633,11 +572,6 @@ export const messages = {
     "Message preview",
     "メッセージのプレビュー"
   ],
-  "preview.onlyYou": [
-    "仅自己可见",
-    "Only visible to you",
-    "自分にのみ表示"
-  ],
   "preview.refresh": [
     "刷新个人预览",
     "Refresh personal preview",
@@ -753,25 +687,10 @@ export const messages = {
     "Enter a valid demo issue key or message ID.",
     "有効なデモ課題キーまたはメッセージ ID を入力してください。"
   ],
-  "probe.eyebrow": [
-    "WORKLOG / 接入验证",
-    "WORKLOG / CONNECTION CHECK",
-    "WORKLOG / 接続確認"
-  ],
   "probe.heading": [
     "先确认，个人预览能正常读取。",
     "Check that personal previews work.",
     "個人プレビューの接続を確認しましょう。"
-  ],
-  "probe.description": [
-    "共享工作记录留在看板。外部内容由当前浏览器的登录会话决定。",
-    "Shared work stays on the board. External content depends on this browser’s signed-in session.",
-    "共有作業はボードに保存されます。外部コンテンツの表示は、このブラウザーのログイン状態に従います。"
-  ],
-  "probe.signInHint": [
-    "每个浏览器 profile 独立登录；这里无需输入密码或 Token。",
-    "Sign in separately in each browser profile. No passwords or tokens are entered here.",
-    "ブラウザープロファイルごとにログインします。ここでパスワードやトークンを入力する必要はありません。"
   ],
   "probe.reconnect": [
     "重新连接",
@@ -862,11 +781,6 @@ export const messages = {
     "尚未读取",
     "Not read yet",
     "まだ読み込んでいません"
-  ],
-  "probe.disclaimer": [
-    "这是本地模拟验证，不代表公司 SSO 或真实系统兼容性已验收。预览不写入共享服务。",
-    "This is a local demo, not verification of company SSO or real-system compatibility. Previews are not saved to the shared service.",
-    "これはローカルの動作確認です。社内 SSO や実システムとの互換性を保証するものではありません。プレビューは共有サービスに保存されません。"
   ],
   "probe.pageTitle": [
     "模拟接入验证",

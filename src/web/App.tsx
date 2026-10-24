@@ -1,19 +1,19 @@
 import {useCallback,useEffect,useMemo,useRef,useState,type MouseEvent} from 'react';
+import type {Resource} from '../contracts/resource-links';
 import {LanguageSwitcher,useLanguage} from './i18n';
 import type {MessageKey} from './i18n/core';
-import {cardResources} from './resources';
-import {PreviewToggle,usePreviewPreference} from './components/PreviewToggle';
 import {api,errorText,type Archive,type ArchiveSummary,type Card,type Snapshot} from './api';
 import {SharedBoard,subscribe,type SyncStatus} from './state/shared';
 import {Board,type FocusRequest} from './components/Board';
 import {CardDialog} from './components/CardDialog';
 import {ColumnDialog} from './components/ColumnDialog';
 import {SavedDraftsDialog} from './components/LocalDraft';
-import {PreviewProvider,PreviewToolbar} from './components/PreviewProvider';
+import {PreviewProvider,PreviewToggle,PreviewToolbar,usePreviewPreference} from './components/PreviewProvider';
 import {ArchiveList} from './components/ArchiveList';
 import {ArchiveCardDialog,CreateArchiveDialog,RenameArchiveDialog,RestoreArchiveDialog} from './components/ArchiveDialogs';
 type Selection={kind:'card';card:Card}|{kind:'new';columnId:string}|{kind:'columns'}|{kind:'createArchive'}|{kind:'restore'}|{kind:'rename';archive:ArchiveSummary}|{kind:'archivedCard';card:Card}|null;
 type Notice={key:MessageKey;count?:number;archiveId?:string};
+const cardResources=(card:Card,detail=false):Resource[]=>[...card.jiraLinks.flatMap(jira=>[{kind:'jira' as const,id:jira.key,url:jira.url},...jira.mattermostLinks.map(link=>({kind:'mattermost' as const,id:link.postId,team:link.team,url:link.url}))]),...(detail?card.unassignedMattermostLinks.map(link=>({kind:'mattermost' as const,id:link.postId,team:link.team,url:link.url})):[])];
 export function App(){
  const {t,date}=useLanguage();
  const [showPreviews,setShowPreviews]=usePreviewPreference();
@@ -63,11 +63,11 @@ export function App(){
  const hasDone=snapshot?.columns.some(column=>column.isDone)??false;
  const detailOpen=selection?.kind==='card'||selection?.kind==='new'||selection?.kind==='archivedCard';
  return <PreviewProvider resources={resources}>
-  <header className="app-header"><div className="brand"><span className="brand-mark">w.</span><div><h1>Worklog</h1><p>{t('app.tagline')}</p></div></div><div className="header-meta"><LanguageSwitcher/>{__SITE_CONFIG__.mode==='dummy'&&<span className="demo-badge">{t('environment.demo')}</span>}<span role="status" className="sync-status">● {t(status)}</span><button onClick={reload}>{t('sync.refresh')}</button></div></header>
+  <header className="app-header"><div className="brand"><span className="brand-mark">w.</span><h1>Worklog</h1></div><div className="header-meta"><LanguageSwitcher/>{__SITE_CONFIG__.mode==='dummy'&&<span className="demo-badge">{t('environment.demo')}</span>}<span role="status" className="sync-status">● {t(status)}</span><button onClick={reload}>{t('sync.refresh')}</button></div></header>
   <nav className="board-navigation"><a href="#" aria-current={currentView?'page':undefined} onClick={event=>link(event,'')}>{t('archive.current')}</a><a href="#/archives" aria-current={!currentView?'page':undefined} onClick={event=>link(event,'#/archives')}>{t('archive.nav')} <span>{snapshot?.archiveCount??0}</span></a></nav>
   {notice&&<div role="status" className="board-notice"><span>{t(notice.key,{count:notice.count??0})}</span>{notice.archiveId&&<a href={'#/archives/'+notice.archiveId} onClick={event=>link(event,'#/archives/'+notice.archiveId)}>{t('archive.view')}</a>}{notice.key==='archive.restored'&&<a href="#" onClick={event=>link(event,'')}>{t('archive.openCurrent')}</a>}</div>}
   {currentView&&<>
-   <div className="board-toolbar"><div><span className="eyebrow">{t('board.eyebrow')}</span><h2>{t('board.title')} <span>{t(snapshot?.cards.length===1?'board.oneWorkItem':'board.workCount',{count:snapshot?.cards.length??0})}</span></h2></div><div className="row-actions"><PreviewToggle enabled={showPreviews} change={setShowPreviews}/><button disabled={!snapshot} onClick={()=>{if(!hasDone){setNotice({key:'archive.noDoneColumn'});setSelection({kind:'columns'});}else setSelection({kind:'createArchive'});}}>{t('archive.create')}</button><button disabled={!snapshot} onClick={()=>setSelection({kind:'columns'})}>{t('columns.manage')}</button><button className="primary" aria-label={t('card.new')} disabled={!snapshot?.columns.length} onClick={()=>{const column=snapshot?.columns[0];if(column)setSelection({kind:'new',columnId:column.id});}}>＋ {t('card.new')}</button></div></div>
+   <div className="board-toolbar"><h2>{t('board.title')} <span>{t(snapshot?.cards.length===1?'board.oneWorkItem':'board.workCount',{count:snapshot?.cards.length??0})}</span></h2><div className="row-actions"><PreviewToggle enabled={showPreviews} change={setShowPreviews}/><button disabled={!snapshot} onClick={()=>{if(!hasDone){setNotice({key:'archive.noDoneColumn'});setSelection({kind:'columns'});}else setSelection({kind:'createArchive'});}}>{t('archive.create')}</button><button disabled={!snapshot} onClick={()=>setSelection({kind:'columns'})}>{t('columns.manage')}</button><button className="primary" aria-label={t('card.new')} disabled={!snapshot?.columns.length} onClick={()=>{const column=snapshot?.columns[0];if(column)setSelection({kind:'new',columnId:column.id});}}>＋ {t('card.new')}</button></div></div>
    {showPreviews&&!detailOpen&&<PreviewToolbar/>}
    {snapshot?<Board key="current" snapshot={snapshot} showPreviews={showPreviews} open={card=>setSelection({kind:'card',card})} create={columnId=>setSelection({kind:'new',columnId})} accept={accept} reload={reload} focusRequest={focusRequest}/>:<p className="loading">{t('board.loading')}</p>}
   </>}
@@ -75,9 +75,9 @@ export function App(){
   {archiveId&&<>
    <div className="board-toolbar archive-toolbar"><div><a className="back-link" href="#/archives" onClick={event=>link(event,'#/archives')}>← {t('archive.list')}</a><h2>{history?.name??t('archive.nav')}</h2>{history&&<p className="hint">{date(history.createdAt)} · {t('archive.readonly')}</p>}</div><div className="row-actions"><PreviewToggle enabled={showPreviews} change={setShowPreviews}/><button className="primary" disabled={!history||!snapshot} onClick={()=>setSelection({kind:'restore'})}>{t('archive.restore')}</button></div></div>
    {archiveError&&<div role="alert" className="move-error error">{t(archiveError)} <button onClick={reload}>{t('sync.refresh')}</button></div>}
-   {history?<>{history.description&&<p className="archive-board-description">{history.description}</p>}{showPreviews&&<p className="archive-live hint">{t('archive.live')}</p>}{showPreviews&&!detailOpen&&<PreviewToolbar/>}<div className="archive-board"><Board key={history.id} snapshot={history.snapshot} readOnly showPreviews={showPreviews} open={card=>setSelection({kind:'archivedCard',card})} create={()=>{}} accept={()=>{}} reload={reload} focusRequest={null}/></div></>:!archiveError&&<p className="loading">{t('board.loading')}</p>}
+   {history?<>{history.description&&<p className="archive-board-description">{history.description}</p>}{showPreviews&&!detailOpen&&<PreviewToolbar/>}<div className="archive-board"><Board key={history.id} snapshot={history.snapshot} readOnly showPreviews={showPreviews} open={card=>setSelection({kind:'archivedCard',card})} create={()=>{}} accept={()=>{}} reload={reload} focusRequest={null}/></div></>:!archiveError&&<p className="loading">{t('board.loading')}</p>}
   </>}
-  <footer className="app-footer"><span>{t('app.sharedNotesFooter')}</span><button disabled={!!selection} onClick={()=>setShowDrafts(true)}>{t('draft.all')}</button><span>{t('app.sourceContentFooter')}</span></footer>
+  <footer className="app-footer"><button disabled={!!selection} onClick={()=>setShowDrafts(true)}>{t('draft.all')}</button></footer>
   {showDrafts&&<SavedDraftsDialog close={()=>setShowDrafts(false)}/>}
   {snapshot&&selection?.kind==='columns'&&<ColumnDialog snapshot={snapshot} accept={accept} reload={reload} close={close} onDirtyChange={dirtyChanged}/>}
   {snapshot&&(selection?.kind==='new'||(selection?.kind==='card'&&card))&&<CardDialog key={selection.kind==='card'?selection.card.id:'new'} card={card} columnId={selection.kind==='new'?selection.columnId:card!.columnId} missing={!!card&&!snapshot.cards.some(item=>item.id===card.id)} onDirtyChange={dirtyChanged} snapshot={snapshot} accept={accept} reload={reload} close={close}/>}

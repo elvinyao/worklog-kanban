@@ -8,7 +8,7 @@ import uuid
 
 from app.errors import StoreError
 from app.schemas import ArchiveDetail, ArchiveList, ArchiveSummary, ArchiveWrite, BoardSnapshot
-from app.write_result import WriteResult
+from app.events import WriteResult
 
 
 def summary(row):

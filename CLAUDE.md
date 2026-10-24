@@ -1,3 +1,45 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## プロジェクト概要とアーキテクチャ
+
+FastAPI + React + SQLite + Chrome/Edge 拡張機能で構成される共有作業カンバン。
+
+### データフローとセキュリティ境界
+- **共有サーバー (FastAPI + SQLite)**: カンバンの列、カードタイトル、ノート、順序、バージョン、監査ログ、SSE リアルタイム同期のみを保持。
+- **外部連携 (Jira / Mattermost)**: サーバーは外部クレデンシャルや正文を一切保持・プロキシしない。各ユーザーのブラウザ拡張が自身のセッションを使って取得し、プレビューはブラウザ内メモリにのみ展開する。
+- **モジュール構成**:
+  - `app/`: FastAPI REST API、バリデーション、SQLite 永続化・マイグレーション、SSE、本番ランナー。
+  - `src/web/`: React 看板 SPA、カード詳細、アーカイブ、多言語対応 (i18n)。
+  - `src/extension/` & `src/adapters/`: ブラウザ拡張バックグラウンド、ページブリッジ、Jira / Mattermost アダプタ。
+  - `src/contracts/` & `src/generated/` & `contracts/`: 通信契約定義と OpenAPI 自動生成 TypeScript クライアント。
+  - `dummy/` & `src/dummy/` & `src/probe/`: ローカル検証用 Jira / Mattermost モックサービスおよび検証用プローブ。
+  - `tools/` & `scripts/`: 開発サーバー管理 (`tools.dev`)、ビルド・検証スクリプト。
+
+## 主要開発・検証コマンド
+
+すべての実行は Docker runner (`bash .agent/run.sh`) を経由する。ホスト側はファイル閲覧・編集のみ。
+※ 複合コマンドには `sh -c` を使用すること（`sh -lc` はコンテナ内で PATH をリセットし venv を見失うため禁止）。
+
+| 目的 | コマンド |
+| --- | --- |
+| 依存関係同期 | `bash .agent/run.sh python -m tools.sync_deps` |
+| 開発ビルド | `bash .agent/run.sh npm run build` |
+| 開発サーバー起動 | `bash .agent/run.sh python -m tools.dev` (看板: `4173`, Jira: `4180`, MM: `4181`) |
+| 型・構文・境界検証 | `bash .agent/run.sh npm run check` |
+| 型チェック単体 | `bash .agent/run.sh npm run typecheck` |
+| バックエンド全テスト | `bash .agent/run.sh python -m pytest tests/backend -q` |
+| バックエンド単体テスト | `bash .agent/run.sh python -m pytest tests/backend/test_api.py -q` |
+| フロントエンド単体テスト | `bash .agent/run.sh npm run test:unit` |
+| フロント単体テスト (個別) | `bash .agent/run.sh npm run test:unit -- tests/frontend/preview.test.ts` |
+| E2E テスト (全件) | `bash .agent/run.sh npm run test:e2e` |
+| E2E テスト (個別) | `bash .agent/run.sh npm run test:e2e -- tests/e2e/extension-settings.spec.ts` |
+| Chromium インストール (E2E) | `bash .agent/run.sh npm exec -- playwright install chromium` |
+| API クライアント再生成 | `bash .agent/run.sh npm run generate:api` (API 変更後に実行し両方コミット) |
+
+---
+
 # 開発エージェントの作業規約
 
 目的は、利用者が設計と計画を確認でき、承認後は作業が進み、検証結果を後から追跡できる状態を保つこと。
@@ -75,8 +117,9 @@
 
 ```text
 bash .agent/run.sh <command> [args...]
-bash .agent/run.sh sh -lc 'command1 && command2'
+bash .agent/run.sh sh -c 'command1 && command2'
 ```
+（※コンテナ内の PATH を維持するため、複合コマンドには `sh -lc` ではなく `sh -c` を使用する）
 
 - 最初に `.agent/run.sh` の有無を確認する。存在すれば内容を読み、再利用する。
 - なければ読み取りだけで言語と版を確認し、実行前に編集ツールで runner を作成する。runner のための `mkdir -p .agent` は許可する。

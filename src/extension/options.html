@@ -1,14 +1,13 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Worklog · Settings</title><link rel="stylesheet" href="options.css"></head>
 <body><main>
- <header><div class="logo" aria-hidden="true">W<span>·</span></div><p class="eyebrow">WORKLOG KANBAN</p><p class="kicker" data-i18n="extension.eyebrow"></p><h1 data-i18n="extension.title"></h1><p class="description" data-i18n="extension.description"></p></header>
+ <header><div class="logo" aria-hidden="true">W<span>·</span></div><h1 data-i18n="extension.title"></h1></header>
  <form novalidate>
   <div class="form-heading"><span id="source" class="badge"></span><a id="open-board" target="_blank" rel="noopener noreferrer" data-i18n="extension.openBoard"></a></div>
-  <div class="field"><span class="number" aria-hidden="true">01</span><div><label for="boardOrigin" data-i18n="extension.board"></label><input id="boardOrigin" name="boardOrigin" type="url" required maxlength="2048" autocomplete="off" spellcheck="false" aria-describedby="board-hint"><p id="board-hint" data-i18n="extension.boardHint"></p></div></div>
-  <div class="field"><span class="number" aria-hidden="true">02</span><div><label for="jiraBaseUrl" data-i18n="extension.jira"></label><input id="jiraBaseUrl" name="jiraBaseUrl" type="url" required maxlength="2048" autocomplete="off" spellcheck="false" aria-describedby="jira-hint"><p id="jira-hint" data-i18n="extension.jiraHint"></p></div></div>
-  <div class="field"><span class="number" aria-hidden="true">03</span><div><label for="mattermostBaseUrl" data-i18n="extension.mattermost"></label><input id="mattermostBaseUrl" name="mattermostBaseUrl" type="url" required maxlength="2048" autocomplete="off" spellcheck="false" aria-describedby="mattermost-hint"><p id="mattermost-hint" data-i18n="extension.mattermostHint"></p></div></div>
+  <div class="field"><label for="boardOrigin" data-i18n="extension.board"></label><input id="boardOrigin" name="boardOrigin" type="url" required maxlength="2048" autocomplete="off" spellcheck="false"></div>
+  <div class="field"><label for="jiraBaseUrl" data-i18n="extension.jira"></label><input id="jiraBaseUrl" name="jiraBaseUrl" type="url" required maxlength="2048" autocomplete="off" spellcheck="false"></div>
+  <div class="field"><label for="mattermostBaseUrl" data-i18n="extension.mattermost"></label><input id="mattermostBaseUrl" name="mattermostBaseUrl" type="url" required maxlength="2048" autocomplete="off" spellcheck="false"></div>
   <p id="access" class="access"></p><p id="result" role="status" aria-live="polite"></p>
   <div class="actions"><button type="submit" class="primary" data-i18n="extension.save" disabled></button><button type="button" id="restore" data-i18n="extension.reset" disabled></button><button type="button" id="retry-load" data-i18n="extension.retryLoad" hidden></button></div>
  </form>
- <footer data-i18n="extension.note"></footer>
 </main><script src="options.js" defer></script></body></html>

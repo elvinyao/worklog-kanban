@@ -17,7 +17,6 @@ export function JiraLinksEditor({fields,change}:{fields:Fields;change:(fields:Fi
  const messageFields=(link:MessageDraft,index:number,update:(value:MessageDraft)=>void,readOnly=false)=><><label>{t('card.messageUrl',{index:index+1})}<input required maxLength={2048} readOnly={readOnly} value={link.url} onChange={event=>update({...link,url:event.target.value})} placeholder={t('card.messageUrlPlaceholder')}/></label><label>{t('card.messageDescription',{index:index+1})}<input maxLength={2000} value={link.description} onChange={event=>update({...link,description:event.target.value})} placeholder={t('card.messageDescriptionPlaceholder')}/></label></>;
  return <>
   <div className="section-title"><h3>{t('card.jiraTickets')}</h3><span className="hint">{jiras.length}/20 · {t('card.messageCount',{count:total})}/100</span></div>
-  <p className="hint">{t('card.hierarchyHint')}</p>
   {jiras.map((jira,index)=><section className="jira-editor" role="group" aria-label={t('card.jiraNumber',{index:index+1})} key={jira.draftId}>
    <div className="jira-editor-heading"><h3>{t('card.jiraNumber',{index:index+1})}</h3><div className="row-actions"><button type="button" disabled={index===0} aria-label={t('card.moveJiraUp',{index:index+1})} onClick={()=>setJiras(moved(jiras,index,-1))}>↑</button><button type="button" disabled={index===jiras.length-1} aria-label={t('card.moveJiraDown',{index:index+1})} onClick={()=>setJiras(moved(jiras,index,1))}>↓</button><button type="button" aria-label={t('card.removeJira',{index:index+1})} onClick={()=>setJiras(jiras.filter((_,i)=>i!==index))}>{t('common.remove')}</button></div></div>
    <label>{t('card.jiraKeyOrUrl')}<input required maxLength={2048} value={jira.url} onChange={event=>setJira(index,{...jira,url:event.target.value})} placeholder={t('card.jiraPlaceholder')}/></label>
@@ -30,7 +29,7 @@ export function JiraLinksEditor({fields,change}:{fields:Fields;change:(fields:Fi
    <button type="button" disabled={jira.mattermostLinks.length>=20||total>=100} onClick={()=>setJira(index,{...jira,mattermostLinks:[...jira.mattermostLinks,newMessage()]})}>＋ {t('card.addMessageLink')}</button>
   </section>)}
   <button type="button" disabled={jiras.length>=20} onClick={()=>setJiras([...jiras,newJira()])}>＋ {t('card.addJira')}</button>
-  {fields.unassignedMattermostLinks.length>0&&<section className="unassigned-messages" aria-label={t('card.unassignedMessages')}><h3>{t('card.unassignedMessages')}</h3><p className="hint">{t('card.unassignedHint')}</p>{fields.unassignedMattermostLinks.map((link,index)=><div className="link-editor" key={link.id}>
+  {fields.unassignedMattermostLinks.length>0&&<section className="unassigned-messages" aria-label={t('card.unassignedMessages')}><h3>{t('card.unassignedMessages')}</h3>{fields.unassignedMattermostLinks.map((link,index)=><div className="link-editor" key={link.id}>
    {messageFields(link,index,value=>change({...fields,unassignedMattermostLinks:fields.unassignedMattermostLinks.map((item,i)=>i===index?{...value,id:link.id}:item)}),true)}
    {destination(null,index)}<button type="button" aria-label={t('card.removeMessage',{index:index+1})} onClick={()=>change({...fields,unassignedMattermostLinks:fields.unassignedMattermostLinks.filter((_,i)=>i!==index)})}>{t('common.remove')}</button>
   </div>)}</section>}

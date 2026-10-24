@@ -79,8 +79,8 @@ function Probe() {
   const preview=result?.ok && 'kind' in result.data ? result.data : null;
   const disabled=busy||status!=='connection.connected'||retryAt>Date.now();
   return <main>
-    <header><div><p className="brand">{t("probe.eyebrow")}</p><h1>{t("probe.heading")}</h1><p className="muted">{t("probe.description")}</p></div><span className="badge">{t("environment.demo")}</span></header>
-    <section className="connection"><div><span className={'dot '+(status==='connection.connected'?'online':'')}/><strong role="status">{t(status)}</strong><p className="muted">{t("probe.signInHint")}</p></div><button className="secondary" disabled={status==='connection.connecting'} onClick={()=>{invalidate();setEpoch(value=>value+1);}}>{t("probe.reconnect")}</button></section>
+    <header><h1>{t("probe.heading")}</h1><span className="badge">{t("environment.demo")}</span></header>
+    <section className="connection"><div><span className={'dot '+(status==='connection.connected'?'online':'')}/><strong role="status">{t(status)}</strong></div><button className="secondary" disabled={status==='connection.connecting'} onClick={()=>{invalidate();setEpoch(value=>value+1);}}>{t("probe.reconnect")}</button></section>
     <div className="sources"><section className="source"><div className="source-title"><h2>Jira 9.7</h2><a href={config.jiraBaseUrl+'/__dummy/'} target="_blank" rel="noopener noreferrer">{t("probe.demoLogin")}</a></div><label>{t("probe.jiraIssue")}<input aria-label={t("probe.jiraIssue")} value={key} onChange={e=>{invalidate();setKey(e.target.value);}}/></label><p className="hint">{t("probe.jiraExamples")}</p><button disabled={disabled} onClick={()=>void read('jira.preview')}>{t("probe.readJira")}</button></section>
     <section className="source"><div className="source-title"><h2>Mattermost</h2><a href={config.mattermostBaseUrl+'/__dummy/'} target="_blank" rel="noopener noreferrer">{t("probe.demoLogin")}</a></div><label>{t("probe.messageId")}<input aria-label={t("probe.messageId")} value={post} onChange={e=>{invalidate();setPost(e.target.value);}}/></label><p className="hint">{t("probe.messageExamples")}</p><button disabled={disabled} onClick={()=>void read('mattermost.preview')}>{t("probe.readMattermost")}</button></section></div>
     <section className="preview"><div className="source-title"><h2>{t("probe.currentPreview")}</h2><span className="muted" data-testid="last-success">{lastSuccess?t('preview.lastLoaded',{time:time(lastSuccess)}):t('probe.notLoaded')}</span></div>
@@ -92,7 +92,6 @@ function Probe() {
       {preview?.kind==='mattermost'&&<article><h3>{preview.author||t('preview.unknownUser')}</h3><p className="meta">{preview.channel??t('probe.channelUnavailable')} · {date(preview.createdAt)}</p><p className="message">{preview.text}</p><a href={preview.url} target="_blank" rel="noopener noreferrer">{t("probe.openMessage")}</a></article>}
     </section>
     <details><summary>{t("probe.syntheticResponse")}</summary><pre data-testid="result">{result?JSON.stringify(result,null,2):t('probe.notRead')}</pre></details>
-    <p className="footnote">{t("probe.disclaimer")}</p>
   </main>;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><LanguageProvider page="probe"><Probe/></LanguageProvider></StrictMode>);

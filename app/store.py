@@ -11,7 +11,7 @@ from app import associations
 from app.errors import StoreError
 from app.resource_links import parse_resource
 from app.schemas import BoardSnapshot, ChangeColumn, CreateCard, DeleteColumn, EditCard, MoveCard, ReorderColumns
-from app.write_result import WriteResult
+from app.events import WriteResult
 
 
 class Store:

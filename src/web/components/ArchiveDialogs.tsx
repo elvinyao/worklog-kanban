@@ -4,11 +4,9 @@ import type {components} from '../../generated/shared-api';
 import type {MessageKey} from '../i18n/core';
 import {useLanguage} from '../i18n';
 import {Modal} from './Modal';
-import {CardLinks} from './CardLinks';
+import {CardLinks} from './Preview';
 import {PreviewToolbar} from './PreviewProvider';
-import {useDraftGuard} from '../state/draft-guard';
-import {LocalDraft,useLocalDraft} from './LocalDraft';
-import {object,text,number,strings} from '../state/recover-input';
+import {LocalDraft,number,object,strings,text,useDraftGuard,useLocalDraft} from './LocalDraft';
 type Models=components['schemas'];
 type Common={snapshot:Snapshot;reload:()=>void;close:()=>void;done:(result:ArchiveWrite,count:number)=>void;onDirtyChange?:(dirty:boolean)=>void};
 
@@ -56,12 +54,12 @@ export function CreateArchiveDialog({snapshot,reload,close,done,onDirtyChange}:C
  const stale=base.revision!==snapshot.revision||mutation.review;
  const review=()=>{const ids=new Set(completed(snapshot).map(c=>c.id));baseline.current.selected=new Set([...baseline.current.selected].filter(id=>ids.has(id)));setSelected(old=>new Set([...old].filter(id=>ids.has(id))));setBase(snapshot);mutation.reviewed();};
  return <Modal title={t('archive.create')} close={requestClose}><div className="dialog-head"><h2>{t('archive.create')}</h2><button className="icon" aria-label={t('common.close')} disabled={mutation.busy} onClick={requestClose}>×</button></div>
-  <form onSubmit={event=>{event.preventDefault();if((stale&&!mutation.locked)||!selected.size)return;void mutation.submit({requestId:crypto.randomUUID(),expectedBoardRevision:base.revision,name:name.trim(),description,cardIds:[...selected]},pending=>local.persist({...saved,pending}));}}><div className="dialog-content"><p className="hint">{t('archive.onlyCompleted')}</p><LocalDraft draft={local} busy={mutation.busy}/>
+  <form onSubmit={event=>{event.preventDefault();if((stale&&!mutation.locked)||!selected.size)return;void mutation.submit({requestId:crypto.randomUUID(),expectedBoardRevision:base.revision,name:name.trim(),description,cardIds:[...selected]},pending=>local.persist({...saved,pending}));}}><div className="dialog-content"><LocalDraft draft={local} busy={mutation.busy}/>
    <fieldset disabled={mutation.busy||mutation.locked}><label>{t('archive.name')}<input required maxLength={80} value={name} onChange={event=>setName(event.target.value)} autoFocus/></label><label>{t('archive.description')}<textarea maxLength={500} rows={2} value={description} onChange={event=>setDescription(event.target.value)}/></label>
     {base.columns.filter(column=>column.isDone).map(column=><section className="archive-selection-group" key={column.id}><h3>{columnLabel(column)}</h3>{base.cards.filter(card=>card.columnId===column.id).map(card=><SelectionRow key={card.id} card={card} checked={selected.has(card.id)} change={()=>setSelected(value=>toggle(value,card.id))}/>)}</section>)}
    </fieldset>
    {stale&&!mutation.locked&&<div className="notice"><p>{t('archive.changed')}</p><button type="button" onClick={review}>{t('archive.review')}</button></div>}
-   <MutationFeedback mutation={mutation}/><p className="hint">{t('archive.summary',{count:selected.size,remaining:base.cards.length-selected.size})}</p>
+   <MutationFeedback mutation={mutation}/>
   </div><footer className="dialog-footer"><span/><div className="row-actions"><button type="button" disabled={mutation.busy} onClick={requestClose}>{t('common.cancel')}</button><button className="primary" disabled={mutation.busy||!selected.size||!name.trim()||(stale&&!mutation.locked)}>{t(mutation.busy?'common.saving':'archive.confirm',{count:selected.size})}</button></div></footer></form>
  </Modal>;
 }
@@ -82,12 +80,12 @@ export function RestoreArchiveDialog({archive,snapshot,reload,close,done,openCur
  const stale=base.revision!==snapshot.revision||mutation.review;
  async function review(){setReviewing(true);setReviewError('');try{const latest=await api.archive(archive.id);setHistory(latest);setBase(snapshot);setSelected(old=>new Set([...old].filter(id=>!latest.restoredCards[id])));if(!snapshot.columns.some(c=>c.id===target))setTarget('');if(!snapshot.columns.some(c=>c.id===baseline.current.target))baseline.current.target='';mutation.reviewed();}catch(error){setReviewError(errorText(error));}finally{setReviewing(false);}}
  return <Modal title={t('archive.restoreTitle')} close={requestClose}><div className="dialog-head"><h2>{t('archive.restoreTitle')}</h2><button className="icon" aria-label={t('common.close')} disabled={mutation.busy||reviewing} onClick={requestClose}>×</button></div>
-  <form onSubmit={event=>{event.preventDefault();if(!target||!selected.size||(stale&&!mutation.locked))return;void mutation.submit({requestId:crypto.randomUUID(),expectedBoardRevision:base.revision,targetColumnId:target,cardIds:[...selected]},pending=>local.persist({...saved,pending}));}}><div className="dialog-content"><p className="hint">{t('archive.restoreHint')}</p><LocalDraft draft={local} busy={mutation.busy||reviewing}/>
+  <form onSubmit={event=>{event.preventDefault();if(!target||!selected.size||(stale&&!mutation.locked))return;void mutation.submit({requestId:crypto.randomUUID(),expectedBoardRevision:base.revision,targetColumnId:target,cardIds:[...selected]},pending=>local.persist({...saved,pending}));}}><div className="dialog-content"><LocalDraft draft={local} busy={mutation.busy||reviewing}/>
    <fieldset disabled={mutation.busy||mutation.locked||reviewing}>{history.snapshot.cards.map(card=><SelectionRow key={card.id} card={card} disabled={!!history.restoredCards[card.id]} checked={selected.has(card.id)} change={()=>setSelected(value=>toggle(value,card.id))}>{history.restoredCards[card.id]&&<button type="button" onClick={()=>openCurrent(history.restoredCards[card.id]!)}>{t('archive.alreadyCurrent')} ↗</button>}</SelectionRow>)}
     <label>{t('archive.target')}<select required value={target} onChange={event=>setTarget(event.target.value)}><option value="" disabled>{t('card.chooseColumn')}</option>{base.columns.map(column=><option value={column.id} key={column.id}>{columnLabel(column)}</option>)}</select></label>
    </fieldset>
    {stale&&!mutation.locked&&<div className="notice"><p>{t('archive.changed')}</p><button type="button" disabled={reviewing} onClick={()=>void review()}>{t('archive.review')}</button></div>}
-   {reviewError&&<p role="alert" className="error">{t(reviewError)}</p>}<MutationFeedback mutation={mutation}/><p className="hint">{t('archive.restoreSummary',{count:selected.size})}</p>
+   {reviewError&&<p role="alert" className="error">{t(reviewError)}</p>}<MutationFeedback mutation={mutation}/>
   </div><footer className="dialog-footer"><span/><div className="row-actions"><button type="button" disabled={mutation.busy||reviewing} onClick={requestClose}>{t('common.cancel')}</button><button className="primary" disabled={mutation.busy||reviewing||!selected.size||!target||(stale&&!mutation.locked)}>{t(mutation.busy?'common.saving':'archive.restoreConfirm',{count:selected.size})}</button></div></footer></form>
  </Modal>;
 }
@@ -112,5 +110,5 @@ export function RenameArchiveDialog({archive,close,reload,done,onDirtyChange}:{a
 }
 
 export function ArchiveCardDialog({card,close}:{card:Card;close:()=>void}){
- const {t}=useLanguage();return <Modal title={t('archive.readonly')} close={close}><div className="dialog-head"><div><span className="eyebrow">{t('archive.readonly')}</span><h2>{card.title}</h2></div><button className="icon" aria-label={t('archive.closeDetail')} onClick={close}>×</button></div><div className="dialog-content"><p className="archive-notes">{card.notes}</p><PreviewToolbar/><p className="hint">{t('archive.live')}</p><CardLinks card={card} previews showDescriptions/></div></Modal>;
+ const {t}=useLanguage();return <Modal title={t('archive.readonly')} close={close}><div className="dialog-head"><h2>{card.title}</h2><button className="icon" aria-label={t('archive.closeDetail')} onClick={close}>×</button></div><div className="dialog-content"><p className="archive-notes">{card.notes}</p><PreviewToolbar/><CardLinks card={card} previews showDescriptions/></div></Modal>;
 }

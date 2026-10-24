@@ -1,12 +1,39 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import type {Draft,Fields} from '../state/drafts';
 import {DRAFT_PREFIX,listDrafts,saveDraft,type SavedDraft} from '../state/local-drafts';
 import {useLanguage} from '../i18n';
 import {Modal} from './Modal';
 
+export const object=(value:unknown):Record<string,unknown>=>{if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Invalid draft');return value as Record<string,unknown>;};
+export const text=(value:unknown,max=20000):string=>{if(typeof value!=='string'||value.length>max)throw new Error('Invalid text');return value;};
+export const number=(value:unknown):number=>{if(!Number.isSafeInteger(value)||(value as number)<0)throw new Error('Invalid revision');return value as number;};
+export const strings=(value:unknown):string[]=>{if(!Array.isArray(value)||value.length>5000)throw new Error('Invalid selection');return value.map(item=>text(item,100));};
+function fields(value:unknown):Fields{
+ const data=object(value);
+ const list=(raw:unknown,max:number)=>{if(!Array.isArray(raw)||raw.length>max)throw new Error('Invalid links');return raw;};
+ const message=(raw:unknown)=>{const row=object(raw);return {draftId:text(row.draftId,100),url:text(row.url,2048),description:text(row.description,2000)};};
+ return {title:text(data.title,200),notes:text(data.notes),jiraLinks:list(data.jiraLinks,20).map(raw=>{const row=object(raw);return {draftId:text(row.draftId,100),url:text(row.url,2048),mattermostLinks:list(row.mattermostLinks,20).map(message)};}),unassignedMattermostLinks:list(data.unassignedMattermostLinks,20).map(raw=>({...message(raw),id:text(object(raw).id,100)}))};
+}
+export function cardDraft(value:unknown):Draft{const data=object(value);return {baseVersion:number(data.baseVersion),baseline:fields(data.baseline),fields:fields(data.fields)};}
+
+// Register every editable dialog with routing and browser-navigation protection.
+export function useDraftGuard({dirty,busy=false,close,onDirtyChange,onDirtyClose}:{dirty:boolean;busy?:boolean;close:()=>void;onDirtyChange?:((dirty:boolean)=>void)|undefined;onDirtyClose?:()=>void}){
+ const {t}=useLanguage();
+ const protectedDraft=dirty||busy;
+ useLayoutEffect(()=>{onDirtyChange?.(protectedDraft);return()=>onDirtyChange?.(false);},[protectedDraft,onDirtyChange]);
+ useEffect(()=>{
+  if(!protectedDraft)return;
+  const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();};
+  window.addEventListener('beforeunload',warn);
+  return()=>window.removeEventListener('beforeunload',warn);
+ },[protectedDraft]);
+ return ()=>{if(busy)return;if(!dirty)close();else if(onDirtyClose)onDirtyClose();else if(window.confirm(t('card.unsavedChanges')))close();};
+}
+
 export function SavedDraftsDialog({close}:{close:()=>void}){
  const {t,date}=useLanguage();const [failed,setFailed]=useState(false);
  const [items,setItems]=useState(()=>{try{return listDrafts(localStorage);}catch{return [];}});
- return <Modal title={t('draft.all')} close={close}><div className="dialog-head"><h2>{t('draft.all')}</h2><button onClick={close}>{t('common.close')}</button></div><div className="dialog-content"><p>{t('draft.copyHint')}</p>{!items.length&&<p>{t('draft.empty')}</p>}{failed&&<p role="alert">{t('draft.failed')}</p>}{items.map(item=><section key={item.id}><label>{item.scope} · {date(new Date(item.savedAt).toISOString())}<textarea readOnly rows={6} value={JSON.stringify(item.value,null,2)} onFocus={event=>event.currentTarget.select()}/></label><button onClick={()=>{try{localStorage.removeItem(DRAFT_PREFIX+item.id);setItems(previous=>previous.filter(row=>row.id!==item.id));}catch{setFailed(true);}}}>{t('columns.discardDraft')}</button></section>)}</div></Modal>;
+ return <Modal title={t('draft.all')} close={close}><div className="dialog-head"><h2>{t('draft.all')}</h2><button onClick={close}>{t('common.close')}</button></div><div className="dialog-content">{!items.length&&<p>{t('draft.empty')}</p>}{failed&&<p role="alert">{t('draft.failed')}</p>}{items.map(item=><section key={item.id}><label>{item.scope} · {date(new Date(item.savedAt).toISOString())}<textarea readOnly rows={6} value={JSON.stringify(item.value,null,2)} onFocus={event=>event.currentTarget.select()}/></label><button onClick={()=>{try{localStorage.removeItem(DRAFT_PREFIX+item.id);setItems(previous=>previous.filter(row=>row.id!==item.id));}catch{setFailed(true);}}}>{t('columns.discardDraft')}</button></section>)}</div></Modal>;
 }
 
 export function useLocalDraft<T>(scope:string,value:T,restore:(value:unknown)=>void){
