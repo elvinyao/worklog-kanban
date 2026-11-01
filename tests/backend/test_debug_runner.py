@@ -65,3 +65,19 @@ def test_proxy_requires_ca_before_build_or_run(tmp_path):
     result, calls = invoke(tmp_path, 'run-proxy.sh', {'HTTP_PROXY': 'http://localhost:7890'})
     assert result.returncode != 0 and 'WORKLOG_CA_CERT' in result.stderr
     assert not any(call[0] in {'build', 'run'} for call in calls)
+
+
+def test_runtime_and_image_pins_stay_aligned(tmp_path):
+    import shutil
+    import pytest
+    from tools.verify_boundaries import check_runtime_pins
+
+    check_runtime_pins(ROOT)
+    for rel in ('.python-version', '.nvmrc', 'package.json', 'pyproject.toml', '.agent/run.sh', '.agent/Dockerfile', '.agent/images.lock', 'Dockerfile', 'docker/legacy.Dockerfile', 'deploy/fake/compose.yaml'):
+        target = tmp_path / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / rel, target)
+    check_runtime_pins(tmp_path)
+    (tmp_path / 'Dockerfile').write_text((tmp_path / 'Dockerfile').read_text().replace('933b46a0', '00000000'))
+    with pytest.raises(SystemExit, match='Dockerfile'):
+        check_runtime_pins(tmp_path)

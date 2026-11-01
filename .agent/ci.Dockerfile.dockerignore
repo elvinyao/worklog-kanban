@@ -6,6 +6,9 @@
 !.agent/run-proxy.sh
 !.agent/images.lock
 !.agent/ci-checks.sh
+!.python-version
+!.nvmrc
+!Dockerfile
 !package.json
 !package-lock.json
 !pyproject.toml
@@ -14,6 +17,9 @@
 !vitest.config.ts
 !playwright.config.ts
 !docker.sh
+!deploy/
+!deploy/fake/
+!deploy/fake/compose.yaml
 !requirements/
 !requirements/*.txt
 !requirements/*.in
