@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG NODE_IMAGE=node:24.21.0-bookworm
+ARG NODE_IMAGE=node:24.22.2-bookworm
 ARG PYTHON_IMAGE=python:3.13.15-bookworm
 FROM ${NODE_IMAGE} AS node
 FROM ${PYTHON_IMAGE}

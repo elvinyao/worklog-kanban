@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Production only. Debug tooling: .agent/Dockerfile. Fake: docker/legacy.Dockerfile.
 ARG PYTHON_IMAGE=python@sha256:933b46a028fd786c9c3d426ebabc237e29a15912231ea8de576e95f0e4f41a4c
-ARG NODE_IMAGE=node@sha256:6dac556d980b7f0e5498d08f08cee0ca67798b4ad6c23964a9214920e67758d0
+ARG NODE_IMAGE=node@sha256:e7add2a490bb17d97b485b8641bd88455fff7839ade0f5eba493c3508124d413
 FROM ${NODE_IMAGE} AS node
 FROM ${PYTHON_IMAGE} AS runtime-base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1

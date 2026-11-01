@@ -4,8 +4,8 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON_IMAGE="python:3.13.15-bookworm"
-NODE_IMAGE="node:24.21.0-bookworm"
-DEV_IMAGE="worklog-kanban-dev:python3.13.15-node24.21.0"
+NODE_IMAGE="node:24.22.2-bookworm"
+DEV_IMAGE="worklog-kanban-dev:python3.13.15-node24.22.2"
 
 # Compatibility only. Deployment is owned by docker.sh, not this debug runner.
 if [ "${1:-}" = app ]; then
